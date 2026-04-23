@@ -1,0 +1,3424 @@
+import { createBrushingEngine as pe } from "@dabrush/engine";
+function qn(t) {
+  const e = t.indptr.length - 1;
+  let n = -1;
+  for (let r = 0; r < t.indices.length; r++)
+    t.indices[r] > n && (n = t.indices[r]);
+  const i = Array.from({ length: e }, () => new Array(n + 1).fill(0));
+  for (let r = 0; r < e; r++)
+    for (let s = t.indptr[r]; s < t.indptr[r + 1]; s++) {
+      const o = t.indices[s], h = t.data[s];
+      i[r][o] = h;
+    }
+  return i;
+}
+function At(t, e) {
+  return t == null || e == null ? NaN : t < e ? -1 : t > e ? 1 : t >= e ? 0 : NaN;
+}
+function Cn(t, e) {
+  return t == null || e == null ? NaN : e < t ? -1 : e > t ? 1 : e >= t ? 0 : NaN;
+}
+function Ke(t) {
+  let e, n, i;
+  t.length !== 2 ? (e = At, n = (h, a) => At(t(h), a), i = (h, a) => t(h) - a) : (e = t === At || t === Cn ? t : Fn, n = t, i = t);
+  function r(h, a, u = 0, c = h.length) {
+    if (u < c) {
+      if (e(a, a) !== 0) return c;
+      do {
+        const l = u + c >>> 1;
+        n(h[l], a) < 0 ? u = l + 1 : c = l;
+      } while (u < c);
+    }
+    return u;
+  }
+  function s(h, a, u = 0, c = h.length) {
+    if (u < c) {
+      if (e(a, a) !== 0) return c;
+      do {
+        const l = u + c >>> 1;
+        n(h[l], a) <= 0 ? u = l + 1 : c = l;
+      } while (u < c);
+    }
+    return u;
+  }
+  function o(h, a, u = 0, c = h.length) {
+    const l = r(h, a, u, c - 1);
+    return l > u && i(h[l - 1], a) > -i(h[l], a) ? l - 1 : l;
+  }
+  return { left: r, center: o, right: s };
+}
+function Fn() {
+  return 0;
+}
+function Hn(t) {
+  return t === null ? NaN : +t;
+}
+const zn = Ke(At), On = zn.right;
+Ke(Hn).center;
+function ye(t, e) {
+  let n, i;
+  if (e === void 0)
+    for (const r of t)
+      r != null && (n === void 0 ? r >= r && (n = i = r) : (n > r && (n = r), i < r && (i = r)));
+  else {
+    let r = -1;
+    for (let s of t)
+      (s = e(s, ++r, t)) != null && (n === void 0 ? s >= s && (n = i = s) : (n > s && (n = s), i < s && (i = s)));
+  }
+  return [n, i];
+}
+class we extends Map {
+  constructor(e, n = Tn) {
+    if (super(), Object.defineProperties(this, { _intern: { value: /* @__PURE__ */ new Map() }, _key: { value: n } }), e != null) for (const [i, r] of e) this.set(i, r);
+  }
+  get(e) {
+    return super.get(xe(this, e));
+  }
+  has(e) {
+    return super.has(xe(this, e));
+  }
+  set(e, n) {
+    return super.set(Dn(this, e), n);
+  }
+  delete(e) {
+    return super.delete($n(this, e));
+  }
+}
+function xe({ _intern: t, _key: e }, n) {
+  const i = e(n);
+  return t.has(i) ? t.get(i) : n;
+}
+function Dn({ _intern: t, _key: e }, n) {
+  const i = e(n);
+  return t.has(i) ? t.get(i) : (t.set(i, n), n);
+}
+function $n({ _intern: t, _key: e }, n) {
+  const i = e(n);
+  return t.has(i) && (n = t.get(i), t.delete(i)), n;
+}
+function Tn(t) {
+  return t !== null && typeof t == "object" ? t.valueOf() : t;
+}
+const Xn = Math.sqrt(50), Yn = Math.sqrt(10), Wn = Math.sqrt(2);
+function It(t, e, n) {
+  const i = (e - t) / Math.max(0, n), r = Math.floor(Math.log10(i)), s = i / Math.pow(10, r), o = s >= Xn ? 10 : s >= Yn ? 5 : s >= Wn ? 2 : 1;
+  let h, a, u;
+  return r < 0 ? (u = Math.pow(10, -r) / o, h = Math.round(t * u), a = Math.round(e * u), h / u < t && ++h, a / u > e && --a, u = -u) : (u = Math.pow(10, r) * o, h = Math.round(t / u), a = Math.round(e / u), h * u < t && ++h, a * u > e && --a), a < h && 0.5 <= n && n < 2 ? It(t, e, n * 2) : [h, a, u];
+}
+function Un(t, e, n) {
+  if (e = +e, t = +t, n = +n, !(n > 0)) return [];
+  if (t === e) return [t];
+  const i = e < t, [r, s, o] = i ? It(e, t, n) : It(t, e, n);
+  if (!(s >= r)) return [];
+  const h = s - r + 1, a = new Array(h);
+  if (i)
+    if (o < 0) for (let u = 0; u < h; ++u) a[u] = (s - u) / -o;
+    else for (let u = 0; u < h; ++u) a[u] = (s - u) * o;
+  else if (o < 0) for (let u = 0; u < h; ++u) a[u] = (r + u) / -o;
+  else for (let u = 0; u < h; ++u) a[u] = (r + u) * o;
+  return a;
+}
+function Kt(t, e, n) {
+  return e = +e, t = +t, n = +n, It(t, e, n)[2];
+}
+function Gn(t, e, n) {
+  e = +e, t = +t, n = +n;
+  const i = e < t, r = i ? Kt(e, t, n) : Kt(t, e, n);
+  return (i ? -1 : 1) * (r < 0 ? 1 / -r : r);
+}
+function V(t, e) {
+  let n;
+  for (const i of t)
+    i != null && (n < i || n === void 0 && i >= i) && (n = i);
+  return n;
+}
+function Vn(t, e) {
+  let n;
+  for (const i of t)
+    i != null && (n > i || n === void 0 && i >= i) && (n = i);
+  return n;
+}
+function Kn(t, e, n) {
+  t = +t, e = +e, n = (r = arguments.length) < 2 ? (e = t, t = 0, 1) : r < 3 ? 1 : +n;
+  for (var i = -1, r = Math.max(0, Math.ceil((e - t) / n)) | 0, s = new Array(r); ++i < r; )
+    s[i] = t + i * n;
+  return s;
+}
+var Jn = { value: () => {
+} };
+function Je() {
+  for (var t = 0, e = arguments.length, n = {}, i; t < e; ++t) {
+    if (!(i = arguments[t] + "") || i in n || /[\s.]/.test(i)) throw new Error("illegal type: " + i);
+    n[i] = [];
+  }
+  return new Mt(n);
+}
+function Mt(t) {
+  this._ = t;
+}
+function Zn(t, e) {
+  return t.trim().split(/^|\s+/).map(function(n) {
+    var i = "", r = n.indexOf(".");
+    if (r >= 0 && (i = n.slice(r + 1), n = n.slice(0, r)), n && !e.hasOwnProperty(n)) throw new Error("unknown type: " + n);
+    return { type: n, name: i };
+  });
+}
+Mt.prototype = Je.prototype = {
+  constructor: Mt,
+  on: function(t, e) {
+    var n = this._, i = Zn(t + "", n), r, s = -1, o = i.length;
+    if (arguments.length < 2) {
+      for (; ++s < o; ) if ((r = (t = i[s]).type) && (r = Qn(n[r], t.name))) return r;
+      return;
+    }
+    if (e != null && typeof e != "function") throw new Error("invalid callback: " + e);
+    for (; ++s < o; )
+      if (r = (t = i[s]).type) n[r] = ve(n[r], t.name, e);
+      else if (e == null) for (r in n) n[r] = ve(n[r], t.name, null);
+    return this;
+  },
+  copy: function() {
+    var t = {}, e = this._;
+    for (var n in e) t[n] = e[n].slice();
+    return new Mt(t);
+  },
+  call: function(t, e) {
+    if ((r = arguments.length - 2) > 0) for (var n = new Array(r), i = 0, r, s; i < r; ++i) n[i] = arguments[i + 2];
+    if (!this._.hasOwnProperty(t)) throw new Error("unknown type: " + t);
+    for (s = this._[t], i = 0, r = s.length; i < r; ++i) s[i].value.apply(e, n);
+  },
+  apply: function(t, e, n) {
+    if (!this._.hasOwnProperty(t)) throw new Error("unknown type: " + t);
+    for (var i = this._[t], r = 0, s = i.length; r < s; ++r) i[r].value.apply(e, n);
+  }
+};
+function Qn(t, e) {
+  for (var n = 0, i = t.length, r; n < i; ++n)
+    if ((r = t[n]).name === e)
+      return r.value;
+}
+function ve(t, e, n) {
+  for (var i = 0, r = t.length; i < r; ++i)
+    if (t[i].name === e) {
+      t[i] = Jn, t = t.slice(0, i).concat(t.slice(i + 1));
+      break;
+    }
+  return n != null && t.push({ name: e, value: n }), t;
+}
+var Jt = "http://www.w3.org/1999/xhtml";
+const _e = {
+  svg: "http://www.w3.org/2000/svg",
+  xhtml: Jt,
+  xlink: "http://www.w3.org/1999/xlink",
+  xml: "http://www.w3.org/XML/1998/namespace",
+  xmlns: "http://www.w3.org/2000/xmlns/"
+};
+function Tt(t) {
+  var e = t += "", n = e.indexOf(":");
+  return n >= 0 && (e = t.slice(0, n)) !== "xmlns" && (t = t.slice(n + 1)), _e.hasOwnProperty(e) ? { space: _e[e], local: t } : t;
+}
+function jn(t) {
+  return function() {
+    var e = this.ownerDocument, n = this.namespaceURI;
+    return n === Jt && e.documentElement.namespaceURI === Jt ? e.createElement(t) : e.createElementNS(n, t);
+  };
+}
+function ti(t) {
+  return function() {
+    return this.ownerDocument.createElementNS(t.space, t.local);
+  };
+}
+function Ze(t) {
+  var e = Tt(t);
+  return (e.local ? ti : jn)(e);
+}
+function ei() {
+}
+function re(t) {
+  return t == null ? ei : function() {
+    return this.querySelector(t);
+  };
+}
+function ni(t) {
+  typeof t != "function" && (t = re(t));
+  for (var e = this._groups, n = e.length, i = new Array(n), r = 0; r < n; ++r)
+    for (var s = e[r], o = s.length, h = i[r] = new Array(o), a, u, c = 0; c < o; ++c)
+      (a = s[c]) && (u = t.call(a, a.__data__, c, s)) && ("__data__" in a && (u.__data__ = a.__data__), h[c] = u);
+  return new F(i, this._parents);
+}
+function ii(t) {
+  return t == null ? [] : Array.isArray(t) ? t : Array.from(t);
+}
+function ri() {
+  return [];
+}
+function Qe(t) {
+  return t == null ? ri : function() {
+    return this.querySelectorAll(t);
+  };
+}
+function si(t) {
+  return function() {
+    return ii(t.apply(this, arguments));
+  };
+}
+function oi(t) {
+  typeof t == "function" ? t = si(t) : t = Qe(t);
+  for (var e = this._groups, n = e.length, i = [], r = [], s = 0; s < n; ++s)
+    for (var o = e[s], h = o.length, a, u = 0; u < h; ++u)
+      (a = o[u]) && (i.push(t.call(a, a.__data__, u, o)), r.push(a));
+  return new F(i, r);
+}
+function je(t) {
+  return function() {
+    return this.matches(t);
+  };
+}
+function tn(t) {
+  return function(e) {
+    return e.matches(t);
+  };
+}
+var hi = Array.prototype.find;
+function ai(t) {
+  return function() {
+    return hi.call(this.children, t);
+  };
+}
+function ui() {
+  return this.firstElementChild;
+}
+function ci(t) {
+  return this.select(t == null ? ui : ai(typeof t == "function" ? t : tn(t)));
+}
+var li = Array.prototype.filter;
+function fi() {
+  return Array.from(this.children);
+}
+function di(t) {
+  return function() {
+    return li.call(this.children, t);
+  };
+}
+function gi(t) {
+  return this.selectAll(t == null ? fi : di(typeof t == "function" ? t : tn(t)));
+}
+function mi(t) {
+  typeof t != "function" && (t = je(t));
+  for (var e = this._groups, n = e.length, i = new Array(n), r = 0; r < n; ++r)
+    for (var s = e[r], o = s.length, h = i[r] = [], a, u = 0; u < o; ++u)
+      (a = s[u]) && t.call(a, a.__data__, u, s) && h.push(a);
+  return new F(i, this._parents);
+}
+function en(t) {
+  return new Array(t.length);
+}
+function pi() {
+  return new F(this._enter || this._groups.map(en), this._parents);
+}
+function Nt(t, e) {
+  this.ownerDocument = t.ownerDocument, this.namespaceURI = t.namespaceURI, this._next = null, this._parent = t, this.__data__ = e;
+}
+Nt.prototype = {
+  constructor: Nt,
+  appendChild: function(t) {
+    return this._parent.insertBefore(t, this._next);
+  },
+  insertBefore: function(t, e) {
+    return this._parent.insertBefore(t, e);
+  },
+  querySelector: function(t) {
+    return this._parent.querySelector(t);
+  },
+  querySelectorAll: function(t) {
+    return this._parent.querySelectorAll(t);
+  }
+};
+function yi(t) {
+  return function() {
+    return t;
+  };
+}
+function wi(t, e, n, i, r, s) {
+  for (var o = 0, h, a = e.length, u = s.length; o < u; ++o)
+    (h = e[o]) ? (h.__data__ = s[o], i[o] = h) : n[o] = new Nt(t, s[o]);
+  for (; o < a; ++o)
+    (h = e[o]) && (r[o] = h);
+}
+function xi(t, e, n, i, r, s, o) {
+  var h, a, u = /* @__PURE__ */ new Map(), c = e.length, l = s.length, f = new Array(c), d;
+  for (h = 0; h < c; ++h)
+    (a = e[h]) && (f[h] = d = o.call(a, a.__data__, h, e) + "", u.has(d) ? r[h] = a : u.set(d, a));
+  for (h = 0; h < l; ++h)
+    d = o.call(t, s[h], h, s) + "", (a = u.get(d)) ? (i[h] = a, a.__data__ = s[h], u.delete(d)) : n[h] = new Nt(t, s[h]);
+  for (h = 0; h < c; ++h)
+    (a = e[h]) && u.get(f[h]) === a && (r[h] = a);
+}
+function vi(t) {
+  return t.__data__;
+}
+function _i(t, e) {
+  if (!arguments.length) return Array.from(this, vi);
+  var n = e ? xi : wi, i = this._parents, r = this._groups;
+  typeof t != "function" && (t = yi(t));
+  for (var s = r.length, o = new Array(s), h = new Array(s), a = new Array(s), u = 0; u < s; ++u) {
+    var c = i[u], l = r[u], f = l.length, d = Si(t.call(c, c && c.__data__, u, i)), g = d.length, m = h[u] = new Array(g), x = o[u] = new Array(g), y = a[u] = new Array(f);
+    n(c, l, m, x, y, d, e);
+    for (var w = 0, _ = 0, S, A; w < g; ++w)
+      if (S = m[w]) {
+        for (w >= _ && (_ = w + 1); !(A = x[_]) && ++_ < g; ) ;
+        S._next = A || null;
+      }
+  }
+  return o = new F(o, i), o._enter = h, o._exit = a, o;
+}
+function Si(t) {
+  return typeof t == "object" && "length" in t ? t : Array.from(t);
+}
+function bi() {
+  return new F(this._exit || this._groups.map(en), this._parents);
+}
+function Ri(t, e, n) {
+  var i = this.enter(), r = this, s = this.exit();
+  return typeof t == "function" ? (i = t(i), i && (i = i.selection())) : i = i.append(t + ""), e != null && (r = e(r), r && (r = r.selection())), n == null ? s.remove() : n(s), i && r ? i.merge(r).order() : r;
+}
+function Pi(t) {
+  for (var e = t.selection ? t.selection() : t, n = this._groups, i = e._groups, r = n.length, s = i.length, o = Math.min(r, s), h = new Array(r), a = 0; a < o; ++a)
+    for (var u = n[a], c = i[a], l = u.length, f = h[a] = new Array(l), d, g = 0; g < l; ++g)
+      (d = u[g] || c[g]) && (f[g] = d);
+  for (; a < r; ++a)
+    h[a] = n[a];
+  return new F(h, this._parents);
+}
+function Bi() {
+  for (var t = this._groups, e = -1, n = t.length; ++e < n; )
+    for (var i = t[e], r = i.length - 1, s = i[r], o; --r >= 0; )
+      (o = i[r]) && (s && o.compareDocumentPosition(s) ^ 4 && s.parentNode.insertBefore(o, s), s = o);
+  return this;
+}
+function Ai(t) {
+  t || (t = Mi);
+  function e(l, f) {
+    return l && f ? t(l.__data__, f.__data__) : !l - !f;
+  }
+  for (var n = this._groups, i = n.length, r = new Array(i), s = 0; s < i; ++s) {
+    for (var o = n[s], h = o.length, a = r[s] = new Array(h), u, c = 0; c < h; ++c)
+      (u = o[c]) && (a[c] = u);
+    a.sort(e);
+  }
+  return new F(r, this._parents).order();
+}
+function Mi(t, e) {
+  return t < e ? -1 : t > e ? 1 : t >= e ? 0 : NaN;
+}
+function Ei() {
+  var t = arguments[0];
+  return arguments[0] = this, t.apply(null, arguments), this;
+}
+function ki() {
+  return Array.from(this);
+}
+function Ii() {
+  for (var t = this._groups, e = 0, n = t.length; e < n; ++e)
+    for (var i = t[e], r = 0, s = i.length; r < s; ++r) {
+      var o = i[r];
+      if (o) return o;
+    }
+  return null;
+}
+function Ni() {
+  let t = 0;
+  for (const e of this) ++t;
+  return t;
+}
+function Li() {
+  return !this.node();
+}
+function qi(t) {
+  for (var e = this._groups, n = 0, i = e.length; n < i; ++n)
+    for (var r = e[n], s = 0, o = r.length, h; s < o; ++s)
+      (h = r[s]) && t.call(h, h.__data__, s, r);
+  return this;
+}
+function Ci(t) {
+  return function() {
+    this.removeAttribute(t);
+  };
+}
+function Fi(t) {
+  return function() {
+    this.removeAttributeNS(t.space, t.local);
+  };
+}
+function Hi(t, e) {
+  return function() {
+    this.setAttribute(t, e);
+  };
+}
+function zi(t, e) {
+  return function() {
+    this.setAttributeNS(t.space, t.local, e);
+  };
+}
+function Oi(t, e) {
+  return function() {
+    var n = e.apply(this, arguments);
+    n == null ? this.removeAttribute(t) : this.setAttribute(t, n);
+  };
+}
+function Di(t, e) {
+  return function() {
+    var n = e.apply(this, arguments);
+    n == null ? this.removeAttributeNS(t.space, t.local) : this.setAttributeNS(t.space, t.local, n);
+  };
+}
+function $i(t, e) {
+  var n = Tt(t);
+  if (arguments.length < 2) {
+    var i = this.node();
+    return n.local ? i.getAttributeNS(n.space, n.local) : i.getAttribute(n);
+  }
+  return this.each((e == null ? n.local ? Fi : Ci : typeof e == "function" ? n.local ? Di : Oi : n.local ? zi : Hi)(n, e));
+}
+function nn(t) {
+  return t.ownerDocument && t.ownerDocument.defaultView || t.document && t || t.defaultView;
+}
+function Ti(t) {
+  return function() {
+    this.style.removeProperty(t);
+  };
+}
+function Xi(t, e, n) {
+  return function() {
+    this.style.setProperty(t, e, n);
+  };
+}
+function Yi(t, e, n) {
+  return function() {
+    var i = e.apply(this, arguments);
+    i == null ? this.style.removeProperty(t) : this.style.setProperty(t, i, n);
+  };
+}
+function Wi(t, e, n) {
+  return arguments.length > 1 ? this.each((e == null ? Ti : typeof e == "function" ? Yi : Xi)(t, e, n ?? "")) : it(this.node(), t);
+}
+function it(t, e) {
+  return t.style.getPropertyValue(e) || nn(t).getComputedStyle(t, null).getPropertyValue(e);
+}
+function Ui(t) {
+  return function() {
+    delete this[t];
+  };
+}
+function Gi(t, e) {
+  return function() {
+    this[t] = e;
+  };
+}
+function Vi(t, e) {
+  return function() {
+    var n = e.apply(this, arguments);
+    n == null ? delete this[t] : this[t] = n;
+  };
+}
+function Ki(t, e) {
+  return arguments.length > 1 ? this.each((e == null ? Ui : typeof e == "function" ? Vi : Gi)(t, e)) : this.node()[t];
+}
+function rn(t) {
+  return t.trim().split(/^|\s+/);
+}
+function se(t) {
+  return t.classList || new sn(t);
+}
+function sn(t) {
+  this._node = t, this._names = rn(t.getAttribute("class") || "");
+}
+sn.prototype = {
+  add: function(t) {
+    var e = this._names.indexOf(t);
+    e < 0 && (this._names.push(t), this._node.setAttribute("class", this._names.join(" ")));
+  },
+  remove: function(t) {
+    var e = this._names.indexOf(t);
+    e >= 0 && (this._names.splice(e, 1), this._node.setAttribute("class", this._names.join(" ")));
+  },
+  contains: function(t) {
+    return this._names.indexOf(t) >= 0;
+  }
+};
+function on(t, e) {
+  for (var n = se(t), i = -1, r = e.length; ++i < r; ) n.add(e[i]);
+}
+function hn(t, e) {
+  for (var n = se(t), i = -1, r = e.length; ++i < r; ) n.remove(e[i]);
+}
+function Ji(t) {
+  return function() {
+    on(this, t);
+  };
+}
+function Zi(t) {
+  return function() {
+    hn(this, t);
+  };
+}
+function Qi(t, e) {
+  return function() {
+    (e.apply(this, arguments) ? on : hn)(this, t);
+  };
+}
+function ji(t, e) {
+  var n = rn(t + "");
+  if (arguments.length < 2) {
+    for (var i = se(this.node()), r = -1, s = n.length; ++r < s; ) if (!i.contains(n[r])) return !1;
+    return !0;
+  }
+  return this.each((typeof e == "function" ? Qi : e ? Ji : Zi)(n, e));
+}
+function tr() {
+  this.textContent = "";
+}
+function er(t) {
+  return function() {
+    this.textContent = t;
+  };
+}
+function nr(t) {
+  return function() {
+    var e = t.apply(this, arguments);
+    this.textContent = e ?? "";
+  };
+}
+function ir(t) {
+  return arguments.length ? this.each(t == null ? tr : (typeof t == "function" ? nr : er)(t)) : this.node().textContent;
+}
+function rr() {
+  this.innerHTML = "";
+}
+function sr(t) {
+  return function() {
+    this.innerHTML = t;
+  };
+}
+function or(t) {
+  return function() {
+    var e = t.apply(this, arguments);
+    this.innerHTML = e ?? "";
+  };
+}
+function hr(t) {
+  return arguments.length ? this.each(t == null ? rr : (typeof t == "function" ? or : sr)(t)) : this.node().innerHTML;
+}
+function ar() {
+  this.nextSibling && this.parentNode.appendChild(this);
+}
+function ur() {
+  return this.each(ar);
+}
+function cr() {
+  this.previousSibling && this.parentNode.insertBefore(this, this.parentNode.firstChild);
+}
+function lr() {
+  return this.each(cr);
+}
+function fr(t) {
+  var e = typeof t == "function" ? t : Ze(t);
+  return this.select(function() {
+    return this.appendChild(e.apply(this, arguments));
+  });
+}
+function dr() {
+  return null;
+}
+function gr(t, e) {
+  var n = typeof t == "function" ? t : Ze(t), i = e == null ? dr : typeof e == "function" ? e : re(e);
+  return this.select(function() {
+    return this.insertBefore(n.apply(this, arguments), i.apply(this, arguments) || null);
+  });
+}
+function mr() {
+  var t = this.parentNode;
+  t && t.removeChild(this);
+}
+function pr() {
+  return this.each(mr);
+}
+function yr() {
+  var t = this.cloneNode(!1), e = this.parentNode;
+  return e ? e.insertBefore(t, this.nextSibling) : t;
+}
+function wr() {
+  var t = this.cloneNode(!0), e = this.parentNode;
+  return e ? e.insertBefore(t, this.nextSibling) : t;
+}
+function xr(t) {
+  return this.select(t ? wr : yr);
+}
+function vr(t) {
+  return arguments.length ? this.property("__data__", t) : this.node().__data__;
+}
+function _r(t) {
+  return function(e) {
+    t.call(this, e, this.__data__);
+  };
+}
+function Sr(t) {
+  return t.trim().split(/^|\s+/).map(function(e) {
+    var n = "", i = e.indexOf(".");
+    return i >= 0 && (n = e.slice(i + 1), e = e.slice(0, i)), { type: e, name: n };
+  });
+}
+function br(t) {
+  return function() {
+    var e = this.__on;
+    if (e) {
+      for (var n = 0, i = -1, r = e.length, s; n < r; ++n)
+        s = e[n], (!t.type || s.type === t.type) && s.name === t.name ? this.removeEventListener(s.type, s.listener, s.options) : e[++i] = s;
+      ++i ? e.length = i : delete this.__on;
+    }
+  };
+}
+function Rr(t, e, n) {
+  return function() {
+    var i = this.__on, r, s = _r(e);
+    if (i) {
+      for (var o = 0, h = i.length; o < h; ++o)
+        if ((r = i[o]).type === t.type && r.name === t.name) {
+          this.removeEventListener(r.type, r.listener, r.options), this.addEventListener(r.type, r.listener = s, r.options = n), r.value = e;
+          return;
+        }
+    }
+    this.addEventListener(t.type, s, n), r = { type: t.type, name: t.name, value: e, listener: s, options: n }, i ? i.push(r) : this.__on = [r];
+  };
+}
+function Pr(t, e, n) {
+  var i = Sr(t + ""), r, s = i.length, o;
+  if (arguments.length < 2) {
+    var h = this.node().__on;
+    if (h) {
+      for (var a = 0, u = h.length, c; a < u; ++a)
+        for (r = 0, c = h[a]; r < s; ++r)
+          if ((o = i[r]).type === c.type && o.name === c.name)
+            return c.value;
+    }
+    return;
+  }
+  for (h = e ? Rr : br, r = 0; r < s; ++r) this.each(h(i[r], e, n));
+  return this;
+}
+function an(t, e, n) {
+  var i = nn(t), r = i.CustomEvent;
+  typeof r == "function" ? r = new r(e, n) : (r = i.document.createEvent("Event"), n ? (r.initEvent(e, n.bubbles, n.cancelable), r.detail = n.detail) : r.initEvent(e, !1, !1)), t.dispatchEvent(r);
+}
+function Br(t, e) {
+  return function() {
+    return an(this, t, e);
+  };
+}
+function Ar(t, e) {
+  return function() {
+    return an(this, t, e.apply(this, arguments));
+  };
+}
+function Mr(t, e) {
+  return this.each((typeof e == "function" ? Ar : Br)(t, e));
+}
+function* Er() {
+  for (var t = this._groups, e = 0, n = t.length; e < n; ++e)
+    for (var i = t[e], r = 0, s = i.length, o; r < s; ++r)
+      (o = i[r]) && (yield o);
+}
+var kr = [null];
+function F(t, e) {
+  this._groups = t, this._parents = e;
+}
+function pt() {
+  return new F([[document.documentElement]], kr);
+}
+function Ir() {
+  return this;
+}
+F.prototype = pt.prototype = {
+  constructor: F,
+  select: ni,
+  selectAll: oi,
+  selectChild: ci,
+  selectChildren: gi,
+  filter: mi,
+  data: _i,
+  enter: pi,
+  exit: bi,
+  join: Ri,
+  merge: Pi,
+  selection: Ir,
+  order: Bi,
+  sort: Ai,
+  call: Ei,
+  nodes: ki,
+  node: Ii,
+  size: Ni,
+  empty: Li,
+  each: qi,
+  attr: $i,
+  style: Wi,
+  property: Ki,
+  classed: ji,
+  text: ir,
+  html: hr,
+  raise: ur,
+  lower: lr,
+  append: fr,
+  insert: gr,
+  remove: pr,
+  clone: xr,
+  datum: vr,
+  on: Pr,
+  dispatch: Mr,
+  [Symbol.iterator]: Er
+};
+function oe(t, e, n) {
+  t.prototype = e.prototype = n, n.constructor = t;
+}
+function un(t, e) {
+  var n = Object.create(t.prototype);
+  for (var i in e) n[i] = e[i];
+  return n;
+}
+function yt() {
+}
+var ft = 0.7, Lt = 1 / ft, nt = "\\s*([+-]?\\d+)\\s*", dt = "\\s*([+-]?(?:\\d*\\.)?\\d+(?:[eE][+-]?\\d+)?)\\s*", D = "\\s*([+-]?(?:\\d*\\.)?\\d+(?:[eE][+-]?\\d+)?)%\\s*", Nr = /^#([0-9a-f]{3,8})$/, Lr = new RegExp(`^rgb\\(${nt},${nt},${nt}\\)$`), qr = new RegExp(`^rgb\\(${D},${D},${D}\\)$`), Cr = new RegExp(`^rgba\\(${nt},${nt},${nt},${dt}\\)$`), Fr = new RegExp(`^rgba\\(${D},${D},${D},${dt}\\)$`), Hr = new RegExp(`^hsl\\(${dt},${D},${D}\\)$`), zr = new RegExp(`^hsla\\(${dt},${D},${D},${dt}\\)$`), Se = {
+  aliceblue: 15792383,
+  antiquewhite: 16444375,
+  aqua: 65535,
+  aquamarine: 8388564,
+  azure: 15794175,
+  beige: 16119260,
+  bisque: 16770244,
+  black: 0,
+  blanchedalmond: 16772045,
+  blue: 255,
+  blueviolet: 9055202,
+  brown: 10824234,
+  burlywood: 14596231,
+  cadetblue: 6266528,
+  chartreuse: 8388352,
+  chocolate: 13789470,
+  coral: 16744272,
+  cornflowerblue: 6591981,
+  cornsilk: 16775388,
+  crimson: 14423100,
+  cyan: 65535,
+  darkblue: 139,
+  darkcyan: 35723,
+  darkgoldenrod: 12092939,
+  darkgray: 11119017,
+  darkgreen: 25600,
+  darkgrey: 11119017,
+  darkkhaki: 12433259,
+  darkmagenta: 9109643,
+  darkolivegreen: 5597999,
+  darkorange: 16747520,
+  darkorchid: 10040012,
+  darkred: 9109504,
+  darksalmon: 15308410,
+  darkseagreen: 9419919,
+  darkslateblue: 4734347,
+  darkslategray: 3100495,
+  darkslategrey: 3100495,
+  darkturquoise: 52945,
+  darkviolet: 9699539,
+  deeppink: 16716947,
+  deepskyblue: 49151,
+  dimgray: 6908265,
+  dimgrey: 6908265,
+  dodgerblue: 2003199,
+  firebrick: 11674146,
+  floralwhite: 16775920,
+  forestgreen: 2263842,
+  fuchsia: 16711935,
+  gainsboro: 14474460,
+  ghostwhite: 16316671,
+  gold: 16766720,
+  goldenrod: 14329120,
+  gray: 8421504,
+  green: 32768,
+  greenyellow: 11403055,
+  grey: 8421504,
+  honeydew: 15794160,
+  hotpink: 16738740,
+  indianred: 13458524,
+  indigo: 4915330,
+  ivory: 16777200,
+  khaki: 15787660,
+  lavender: 15132410,
+  lavenderblush: 16773365,
+  lawngreen: 8190976,
+  lemonchiffon: 16775885,
+  lightblue: 11393254,
+  lightcoral: 15761536,
+  lightcyan: 14745599,
+  lightgoldenrodyellow: 16448210,
+  lightgray: 13882323,
+  lightgreen: 9498256,
+  lightgrey: 13882323,
+  lightpink: 16758465,
+  lightsalmon: 16752762,
+  lightseagreen: 2142890,
+  lightskyblue: 8900346,
+  lightslategray: 7833753,
+  lightslategrey: 7833753,
+  lightsteelblue: 11584734,
+  lightyellow: 16777184,
+  lime: 65280,
+  limegreen: 3329330,
+  linen: 16445670,
+  magenta: 16711935,
+  maroon: 8388608,
+  mediumaquamarine: 6737322,
+  mediumblue: 205,
+  mediumorchid: 12211667,
+  mediumpurple: 9662683,
+  mediumseagreen: 3978097,
+  mediumslateblue: 8087790,
+  mediumspringgreen: 64154,
+  mediumturquoise: 4772300,
+  mediumvioletred: 13047173,
+  midnightblue: 1644912,
+  mintcream: 16121850,
+  mistyrose: 16770273,
+  moccasin: 16770229,
+  navajowhite: 16768685,
+  navy: 128,
+  oldlace: 16643558,
+  olive: 8421376,
+  olivedrab: 7048739,
+  orange: 16753920,
+  orangered: 16729344,
+  orchid: 14315734,
+  palegoldenrod: 15657130,
+  palegreen: 10025880,
+  paleturquoise: 11529966,
+  palevioletred: 14381203,
+  papayawhip: 16773077,
+  peachpuff: 16767673,
+  peru: 13468991,
+  pink: 16761035,
+  plum: 14524637,
+  powderblue: 11591910,
+  purple: 8388736,
+  rebeccapurple: 6697881,
+  red: 16711680,
+  rosybrown: 12357519,
+  royalblue: 4286945,
+  saddlebrown: 9127187,
+  salmon: 16416882,
+  sandybrown: 16032864,
+  seagreen: 3050327,
+  seashell: 16774638,
+  sienna: 10506797,
+  silver: 12632256,
+  skyblue: 8900331,
+  slateblue: 6970061,
+  slategray: 7372944,
+  slategrey: 7372944,
+  snow: 16775930,
+  springgreen: 65407,
+  steelblue: 4620980,
+  tan: 13808780,
+  teal: 32896,
+  thistle: 14204888,
+  tomato: 16737095,
+  turquoise: 4251856,
+  violet: 15631086,
+  wheat: 16113331,
+  white: 16777215,
+  whitesmoke: 16119285,
+  yellow: 16776960,
+  yellowgreen: 10145074
+};
+oe(yt, k, {
+  copy(t) {
+    return Object.assign(new this.constructor(), this, t);
+  },
+  displayable() {
+    return this.rgb().displayable();
+  },
+  hex: be,
+  // Deprecated! Use color.formatHex.
+  formatHex: be,
+  formatHex8: Or,
+  formatHsl: Dr,
+  formatRgb: Re,
+  toString: Re
+});
+function be() {
+  return this.rgb().formatHex();
+}
+function Or() {
+  return this.rgb().formatHex8();
+}
+function Dr() {
+  return cn(this).formatHsl();
+}
+function Re() {
+  return this.rgb().formatRgb();
+}
+function k(t) {
+  var e, n;
+  return t = (t + "").trim().toLowerCase(), (e = Nr.exec(t)) ? (n = e[1].length, e = parseInt(e[1], 16), n === 6 ? Pe(e) : n === 3 ? new N(e >> 8 & 15 | e >> 4 & 240, e >> 4 & 15 | e & 240, (e & 15) << 4 | e & 15, 1) : n === 8 ? _t(e >> 24 & 255, e >> 16 & 255, e >> 8 & 255, (e & 255) / 255) : n === 4 ? _t(e >> 12 & 15 | e >> 8 & 240, e >> 8 & 15 | e >> 4 & 240, e >> 4 & 15 | e & 240, ((e & 15) << 4 | e & 15) / 255) : null) : (e = Lr.exec(t)) ? new N(e[1], e[2], e[3], 1) : (e = qr.exec(t)) ? new N(e[1] * 255 / 100, e[2] * 255 / 100, e[3] * 255 / 100, 1) : (e = Cr.exec(t)) ? _t(e[1], e[2], e[3], e[4]) : (e = Fr.exec(t)) ? _t(e[1] * 255 / 100, e[2] * 255 / 100, e[3] * 255 / 100, e[4]) : (e = Hr.exec(t)) ? Me(e[1], e[2] / 100, e[3] / 100, 1) : (e = zr.exec(t)) ? Me(e[1], e[2] / 100, e[3] / 100, e[4]) : Se.hasOwnProperty(t) ? Pe(Se[t]) : t === "transparent" ? new N(NaN, NaN, NaN, 0) : null;
+}
+function Pe(t) {
+  return new N(t >> 16 & 255, t >> 8 & 255, t & 255, 1);
+}
+function _t(t, e, n, i) {
+  return i <= 0 && (t = e = n = NaN), new N(t, e, n, i);
+}
+function $r(t) {
+  return t instanceof yt || (t = k(t)), t ? (t = t.rgb(), new N(t.r, t.g, t.b, t.opacity)) : new N();
+}
+function Zt(t, e, n, i) {
+  return arguments.length === 1 ? $r(t) : new N(t, e, n, i ?? 1);
+}
+function N(t, e, n, i) {
+  this.r = +t, this.g = +e, this.b = +n, this.opacity = +i;
+}
+oe(N, Zt, un(yt, {
+  brighter(t) {
+    return t = t == null ? Lt : Math.pow(Lt, t), new N(this.r * t, this.g * t, this.b * t, this.opacity);
+  },
+  darker(t) {
+    return t = t == null ? ft : Math.pow(ft, t), new N(this.r * t, this.g * t, this.b * t, this.opacity);
+  },
+  rgb() {
+    return this;
+  },
+  clamp() {
+    return new N(Q(this.r), Q(this.g), Q(this.b), qt(this.opacity));
+  },
+  displayable() {
+    return -0.5 <= this.r && this.r < 255.5 && -0.5 <= this.g && this.g < 255.5 && -0.5 <= this.b && this.b < 255.5 && 0 <= this.opacity && this.opacity <= 1;
+  },
+  hex: Be,
+  // Deprecated! Use color.formatHex.
+  formatHex: Be,
+  formatHex8: Tr,
+  formatRgb: Ae,
+  toString: Ae
+}));
+function Be() {
+  return `#${Z(this.r)}${Z(this.g)}${Z(this.b)}`;
+}
+function Tr() {
+  return `#${Z(this.r)}${Z(this.g)}${Z(this.b)}${Z((isNaN(this.opacity) ? 1 : this.opacity) * 255)}`;
+}
+function Ae() {
+  const t = qt(this.opacity);
+  return `${t === 1 ? "rgb(" : "rgba("}${Q(this.r)}, ${Q(this.g)}, ${Q(this.b)}${t === 1 ? ")" : `, ${t})`}`;
+}
+function qt(t) {
+  return isNaN(t) ? 1 : Math.max(0, Math.min(1, t));
+}
+function Q(t) {
+  return Math.max(0, Math.min(255, Math.round(t) || 0));
+}
+function Z(t) {
+  return t = Q(t), (t < 16 ? "0" : "") + t.toString(16);
+}
+function Me(t, e, n, i) {
+  return i <= 0 ? t = e = n = NaN : n <= 0 || n >= 1 ? t = e = NaN : e <= 0 && (t = NaN), new C(t, e, n, i);
+}
+function cn(t) {
+  if (t instanceof C) return new C(t.h, t.s, t.l, t.opacity);
+  if (t instanceof yt || (t = k(t)), !t) return new C();
+  if (t instanceof C) return t;
+  t = t.rgb();
+  var e = t.r / 255, n = t.g / 255, i = t.b / 255, r = Math.min(e, n, i), s = Math.max(e, n, i), o = NaN, h = s - r, a = (s + r) / 2;
+  return h ? (e === s ? o = (n - i) / h + (n < i) * 6 : n === s ? o = (i - e) / h + 2 : o = (e - n) / h + 4, h /= a < 0.5 ? s + r : 2 - s - r, o *= 60) : h = a > 0 && a < 1 ? 0 : o, new C(o, h, a, t.opacity);
+}
+function Xr(t, e, n, i) {
+  return arguments.length === 1 ? cn(t) : new C(t, e, n, i ?? 1);
+}
+function C(t, e, n, i) {
+  this.h = +t, this.s = +e, this.l = +n, this.opacity = +i;
+}
+oe(C, Xr, un(yt, {
+  brighter(t) {
+    return t = t == null ? Lt : Math.pow(Lt, t), new C(this.h, this.s, this.l * t, this.opacity);
+  },
+  darker(t) {
+    return t = t == null ? ft : Math.pow(ft, t), new C(this.h, this.s, this.l * t, this.opacity);
+  },
+  rgb() {
+    var t = this.h % 360 + (this.h < 0) * 360, e = isNaN(t) || isNaN(this.s) ? 0 : this.s, n = this.l, i = n + (n < 0.5 ? n : 1 - n) * e, r = 2 * n - i;
+    return new N(
+      Wt(t >= 240 ? t - 240 : t + 120, r, i),
+      Wt(t, r, i),
+      Wt(t < 120 ? t + 240 : t - 120, r, i),
+      this.opacity
+    );
+  },
+  clamp() {
+    return new C(Ee(this.h), St(this.s), St(this.l), qt(this.opacity));
+  },
+  displayable() {
+    return (0 <= this.s && this.s <= 1 || isNaN(this.s)) && 0 <= this.l && this.l <= 1 && 0 <= this.opacity && this.opacity <= 1;
+  },
+  formatHsl() {
+    const t = qt(this.opacity);
+    return `${t === 1 ? "hsl(" : "hsla("}${Ee(this.h)}, ${St(this.s) * 100}%, ${St(this.l) * 100}%${t === 1 ? ")" : `, ${t})`}`;
+  }
+}));
+function Ee(t) {
+  return t = (t || 0) % 360, t < 0 ? t + 360 : t;
+}
+function St(t) {
+  return Math.max(0, Math.min(1, t || 0));
+}
+function Wt(t, e, n) {
+  return (t < 60 ? e + (n - e) * t / 60 : t < 180 ? n : t < 240 ? e + (n - e) * (240 - t) / 60 : e) * 255;
+}
+const he = (t) => () => t;
+function Yr(t, e) {
+  return function(n) {
+    return t + n * e;
+  };
+}
+function Wr(t, e, n) {
+  return t = Math.pow(t, n), e = Math.pow(e, n) - t, n = 1 / n, function(i) {
+    return Math.pow(t + i * e, n);
+  };
+}
+function Ur(t) {
+  return (t = +t) == 1 ? ln : function(e, n) {
+    return n - e ? Wr(e, n, t) : he(isNaN(e) ? n : e);
+  };
+}
+function ln(t, e) {
+  var n = e - t;
+  return n ? Yr(t, n) : he(isNaN(t) ? e : t);
+}
+const Ct = (function t(e) {
+  var n = Ur(e);
+  function i(r, s) {
+    var o = n((r = Zt(r)).r, (s = Zt(s)).r), h = n(r.g, s.g), a = n(r.b, s.b), u = ln(r.opacity, s.opacity);
+    return function(c) {
+      return r.r = o(c), r.g = h(c), r.b = a(c), r.opacity = u(c), r + "";
+    };
+  }
+  return i.gamma = t, i;
+})(1);
+function Gr(t, e) {
+  e || (e = []);
+  var n = t ? Math.min(e.length, t.length) : 0, i = e.slice(), r;
+  return function(s) {
+    for (r = 0; r < n; ++r) i[r] = t[r] * (1 - s) + e[r] * s;
+    return i;
+  };
+}
+function Vr(t) {
+  return ArrayBuffer.isView(t) && !(t instanceof DataView);
+}
+function Kr(t, e) {
+  var n = e ? e.length : 0, i = t ? Math.min(n, t.length) : 0, r = new Array(i), s = new Array(n), o;
+  for (o = 0; o < i; ++o) r[o] = ae(t[o], e[o]);
+  for (; o < n; ++o) s[o] = e[o];
+  return function(h) {
+    for (o = 0; o < i; ++o) s[o] = r[o](h);
+    return s;
+  };
+}
+function Jr(t, e) {
+  var n = /* @__PURE__ */ new Date();
+  return t = +t, e = +e, function(i) {
+    return n.setTime(t * (1 - i) + e * i), n;
+  };
+}
+function q(t, e) {
+  return t = +t, e = +e, function(n) {
+    return t * (1 - n) + e * n;
+  };
+}
+function Zr(t, e) {
+  var n = {}, i = {}, r;
+  (t === null || typeof t != "object") && (t = {}), (e === null || typeof e != "object") && (e = {});
+  for (r in e)
+    r in t ? n[r] = ae(t[r], e[r]) : i[r] = e[r];
+  return function(s) {
+    for (r in n) i[r] = n[r](s);
+    return i;
+  };
+}
+var Qt = /[-+]?(?:\d+\.?\d*|\.?\d+)(?:[eE][-+]?\d+)?/g, Ut = new RegExp(Qt.source, "g");
+function Qr(t) {
+  return function() {
+    return t;
+  };
+}
+function jr(t) {
+  return function(e) {
+    return t(e) + "";
+  };
+}
+function fn(t, e) {
+  var n = Qt.lastIndex = Ut.lastIndex = 0, i, r, s, o = -1, h = [], a = [];
+  for (t = t + "", e = e + ""; (i = Qt.exec(t)) && (r = Ut.exec(e)); )
+    (s = r.index) > n && (s = e.slice(n, s), h[o] ? h[o] += s : h[++o] = s), (i = i[0]) === (r = r[0]) ? h[o] ? h[o] += r : h[++o] = r : (h[++o] = null, a.push({ i: o, x: q(i, r) })), n = Ut.lastIndex;
+  return n < e.length && (s = e.slice(n), h[o] ? h[o] += s : h[++o] = s), h.length < 2 ? a[0] ? jr(a[0].x) : Qr(e) : (e = a.length, function(u) {
+    for (var c = 0, l; c < e; ++c) h[(l = a[c]).i] = l.x(u);
+    return h.join("");
+  });
+}
+function ae(t, e) {
+  var n = typeof e, i;
+  return e == null || n === "boolean" ? he(e) : (n === "number" ? q : n === "string" ? (i = k(e)) ? (e = i, Ct) : fn : e instanceof k ? Ct : e instanceof Date ? Jr : Vr(e) ? Gr : Array.isArray(e) ? Kr : typeof e.valueOf != "function" && typeof e.toString != "function" || isNaN(e) ? Zr : q)(t, e);
+}
+function ts(t, e) {
+  return t = +t, e = +e, function(n) {
+    return Math.round(t * (1 - n) + e * n);
+  };
+}
+var ke = 180 / Math.PI, jt = {
+  translateX: 0,
+  translateY: 0,
+  rotate: 0,
+  skewX: 0,
+  scaleX: 1,
+  scaleY: 1
+};
+function dn(t, e, n, i, r, s) {
+  var o, h, a;
+  return (o = Math.sqrt(t * t + e * e)) && (t /= o, e /= o), (a = t * n + e * i) && (n -= t * a, i -= e * a), (h = Math.sqrt(n * n + i * i)) && (n /= h, i /= h, a /= h), t * i < e * n && (t = -t, e = -e, a = -a, o = -o), {
+    translateX: r,
+    translateY: s,
+    rotate: Math.atan2(e, t) * ke,
+    skewX: Math.atan(a) * ke,
+    scaleX: o,
+    scaleY: h
+  };
+}
+var bt;
+function es(t) {
+  const e = new (typeof DOMMatrix == "function" ? DOMMatrix : WebKitCSSMatrix)(t + "");
+  return e.isIdentity ? jt : dn(e.a, e.b, e.c, e.d, e.e, e.f);
+}
+function ns(t) {
+  return t == null || (bt || (bt = document.createElementNS("http://www.w3.org/2000/svg", "g")), bt.setAttribute("transform", t), !(t = bt.transform.baseVal.consolidate())) ? jt : (t = t.matrix, dn(t.a, t.b, t.c, t.d, t.e, t.f));
+}
+function gn(t, e, n, i) {
+  function r(u) {
+    return u.length ? u.pop() + " " : "";
+  }
+  function s(u, c, l, f, d, g) {
+    if (u !== l || c !== f) {
+      var m = d.push("translate(", null, e, null, n);
+      g.push({ i: m - 4, x: q(u, l) }, { i: m - 2, x: q(c, f) });
+    } else (l || f) && d.push("translate(" + l + e + f + n);
+  }
+  function o(u, c, l, f) {
+    u !== c ? (u - c > 180 ? c += 360 : c - u > 180 && (u += 360), f.push({ i: l.push(r(l) + "rotate(", null, i) - 2, x: q(u, c) })) : c && l.push(r(l) + "rotate(" + c + i);
+  }
+  function h(u, c, l, f) {
+    u !== c ? f.push({ i: l.push(r(l) + "skewX(", null, i) - 2, x: q(u, c) }) : c && l.push(r(l) + "skewX(" + c + i);
+  }
+  function a(u, c, l, f, d, g) {
+    if (u !== l || c !== f) {
+      var m = d.push(r(d) + "scale(", null, ",", null, ")");
+      g.push({ i: m - 4, x: q(u, l) }, { i: m - 2, x: q(c, f) });
+    } else (l !== 1 || f !== 1) && d.push(r(d) + "scale(" + l + "," + f + ")");
+  }
+  return function(u, c) {
+    var l = [], f = [];
+    return u = t(u), c = t(c), s(u.translateX, u.translateY, c.translateX, c.translateY, l, f), o(u.rotate, c.rotate, l, f), h(u.skewX, c.skewX, l, f), a(u.scaleX, u.scaleY, c.scaleX, c.scaleY, l, f), u = c = null, function(d) {
+      for (var g = -1, m = f.length, x; ++g < m; ) l[(x = f[g]).i] = x.x(d);
+      return l.join("");
+    };
+  };
+}
+var is = gn(es, "px, ", "px)", "deg)"), rs = gn(ns, ", ", ")", ")"), rt = 0, ut = 0, ot = 0, mn = 1e3, Ft, ct, Ht = 0, j = 0, Xt = 0, gt = typeof performance == "object" && performance.now ? performance : Date, pn = typeof window == "object" && window.requestAnimationFrame ? window.requestAnimationFrame.bind(window) : function(t) {
+  setTimeout(t, 17);
+};
+function ue() {
+  return j || (pn(ss), j = gt.now() + Xt);
+}
+function ss() {
+  j = 0;
+}
+function zt() {
+  this._call = this._time = this._next = null;
+}
+zt.prototype = yn.prototype = {
+  constructor: zt,
+  restart: function(t, e, n) {
+    if (typeof t != "function") throw new TypeError("callback is not a function");
+    n = (n == null ? ue() : +n) + (e == null ? 0 : +e), !this._next && ct !== this && (ct ? ct._next = this : Ft = this, ct = this), this._call = t, this._time = n, te();
+  },
+  stop: function() {
+    this._call && (this._call = null, this._time = 1 / 0, te());
+  }
+};
+function yn(t, e, n) {
+  var i = new zt();
+  return i.restart(t, e, n), i;
+}
+function os() {
+  ue(), ++rt;
+  for (var t = Ft, e; t; )
+    (e = j - t._time) >= 0 && t._call.call(void 0, e), t = t._next;
+  --rt;
+}
+function Ie() {
+  j = (Ht = gt.now()) + Xt, rt = ut = 0;
+  try {
+    os();
+  } finally {
+    rt = 0, as(), j = 0;
+  }
+}
+function hs() {
+  var t = gt.now(), e = t - Ht;
+  e > mn && (Xt -= e, Ht = t);
+}
+function as() {
+  for (var t, e = Ft, n, i = 1 / 0; e; )
+    e._call ? (i > e._time && (i = e._time), t = e, e = e._next) : (n = e._next, e._next = null, e = t ? t._next = n : Ft = n);
+  ct = t, te(i);
+}
+function te(t) {
+  if (!rt) {
+    ut && (ut = clearTimeout(ut));
+    var e = t - j;
+    e > 24 ? (t < 1 / 0 && (ut = setTimeout(Ie, t - gt.now() - Xt)), ot && (ot = clearInterval(ot))) : (ot || (Ht = gt.now(), ot = setInterval(hs, mn)), rt = 1, pn(Ie));
+  }
+}
+function Ne(t, e, n) {
+  var i = new zt();
+  return e = e == null ? 0 : +e, i.restart((r) => {
+    i.stop(), t(r + e);
+  }, e, n), i;
+}
+var us = Je("start", "end", "cancel", "interrupt"), cs = [], wn = 0, Le = 1, ee = 2, Et = 3, qe = 4, ne = 5, kt = 6;
+function Yt(t, e, n, i, r, s) {
+  var o = t.__transition;
+  if (!o) t.__transition = {};
+  else if (n in o) return;
+  ls(t, n, {
+    name: e,
+    index: i,
+    // For context during callback.
+    group: r,
+    // For context during callback.
+    on: us,
+    tween: cs,
+    time: s.time,
+    delay: s.delay,
+    duration: s.duration,
+    ease: s.ease,
+    timer: null,
+    state: wn
+  });
+}
+function ce(t, e) {
+  var n = z(t, e);
+  if (n.state > wn) throw new Error("too late; already scheduled");
+  return n;
+}
+function $(t, e) {
+  var n = z(t, e);
+  if (n.state > Et) throw new Error("too late; already running");
+  return n;
+}
+function z(t, e) {
+  var n = t.__transition;
+  if (!n || !(n = n[e])) throw new Error("transition not found");
+  return n;
+}
+function ls(t, e, n) {
+  var i = t.__transition, r;
+  i[e] = n, n.timer = yn(s, 0, n.time);
+  function s(u) {
+    n.state = Le, n.timer.restart(o, n.delay, n.time), n.delay <= u && o(u - n.delay);
+  }
+  function o(u) {
+    var c, l, f, d;
+    if (n.state !== Le) return a();
+    for (c in i)
+      if (d = i[c], d.name === n.name) {
+        if (d.state === Et) return Ne(o);
+        d.state === qe ? (d.state = kt, d.timer.stop(), d.on.call("interrupt", t, t.__data__, d.index, d.group), delete i[c]) : +c < e && (d.state = kt, d.timer.stop(), d.on.call("cancel", t, t.__data__, d.index, d.group), delete i[c]);
+      }
+    if (Ne(function() {
+      n.state === Et && (n.state = qe, n.timer.restart(h, n.delay, n.time), h(u));
+    }), n.state = ee, n.on.call("start", t, t.__data__, n.index, n.group), n.state === ee) {
+      for (n.state = Et, r = new Array(f = n.tween.length), c = 0, l = -1; c < f; ++c)
+        (d = n.tween[c].value.call(t, t.__data__, n.index, n.group)) && (r[++l] = d);
+      r.length = l + 1;
+    }
+  }
+  function h(u) {
+    for (var c = u < n.duration ? n.ease.call(null, u / n.duration) : (n.timer.restart(a), n.state = ne, 1), l = -1, f = r.length; ++l < f; )
+      r[l].call(t, c);
+    n.state === ne && (n.on.call("end", t, t.__data__, n.index, n.group), a());
+  }
+  function a() {
+    n.state = kt, n.timer.stop(), delete i[e];
+    for (var u in i) return;
+    delete t.__transition;
+  }
+}
+function fs(t, e) {
+  var n = t.__transition, i, r, s = !0, o;
+  if (n) {
+    e = e == null ? null : e + "";
+    for (o in n) {
+      if ((i = n[o]).name !== e) {
+        s = !1;
+        continue;
+      }
+      r = i.state > ee && i.state < ne, i.state = kt, i.timer.stop(), i.on.call(r ? "interrupt" : "cancel", t, t.__data__, i.index, i.group), delete n[o];
+    }
+    s && delete t.__transition;
+  }
+}
+function ds(t) {
+  return this.each(function() {
+    fs(this, t);
+  });
+}
+function gs(t, e) {
+  var n, i;
+  return function() {
+    var r = $(this, t), s = r.tween;
+    if (s !== n) {
+      i = n = s;
+      for (var o = 0, h = i.length; o < h; ++o)
+        if (i[o].name === e) {
+          i = i.slice(), i.splice(o, 1);
+          break;
+        }
+    }
+    r.tween = i;
+  };
+}
+function ms(t, e, n) {
+  var i, r;
+  if (typeof n != "function") throw new Error();
+  return function() {
+    var s = $(this, t), o = s.tween;
+    if (o !== i) {
+      r = (i = o).slice();
+      for (var h = { name: e, value: n }, a = 0, u = r.length; a < u; ++a)
+        if (r[a].name === e) {
+          r[a] = h;
+          break;
+        }
+      a === u && r.push(h);
+    }
+    s.tween = r;
+  };
+}
+function ps(t, e) {
+  var n = this._id;
+  if (t += "", arguments.length < 2) {
+    for (var i = z(this.node(), n).tween, r = 0, s = i.length, o; r < s; ++r)
+      if ((o = i[r]).name === t)
+        return o.value;
+    return null;
+  }
+  return this.each((e == null ? gs : ms)(n, t, e));
+}
+function le(t, e, n) {
+  var i = t._id;
+  return t.each(function() {
+    var r = $(this, i);
+    (r.value || (r.value = {}))[e] = n.apply(this, arguments);
+  }), function(r) {
+    return z(r, i).value[e];
+  };
+}
+function xn(t, e) {
+  var n;
+  return (typeof e == "number" ? q : e instanceof k ? Ct : (n = k(e)) ? (e = n, Ct) : fn)(t, e);
+}
+function ys(t) {
+  return function() {
+    this.removeAttribute(t);
+  };
+}
+function ws(t) {
+  return function() {
+    this.removeAttributeNS(t.space, t.local);
+  };
+}
+function xs(t, e, n) {
+  var i, r = n + "", s;
+  return function() {
+    var o = this.getAttribute(t);
+    return o === r ? null : o === i ? s : s = e(i = o, n);
+  };
+}
+function vs(t, e, n) {
+  var i, r = n + "", s;
+  return function() {
+    var o = this.getAttributeNS(t.space, t.local);
+    return o === r ? null : o === i ? s : s = e(i = o, n);
+  };
+}
+function _s(t, e, n) {
+  var i, r, s;
+  return function() {
+    var o, h = n(this), a;
+    return h == null ? void this.removeAttribute(t) : (o = this.getAttribute(t), a = h + "", o === a ? null : o === i && a === r ? s : (r = a, s = e(i = o, h)));
+  };
+}
+function Ss(t, e, n) {
+  var i, r, s;
+  return function() {
+    var o, h = n(this), a;
+    return h == null ? void this.removeAttributeNS(t.space, t.local) : (o = this.getAttributeNS(t.space, t.local), a = h + "", o === a ? null : o === i && a === r ? s : (r = a, s = e(i = o, h)));
+  };
+}
+function bs(t, e) {
+  var n = Tt(t), i = n === "transform" ? rs : xn;
+  return this.attrTween(t, typeof e == "function" ? (n.local ? Ss : _s)(n, i, le(this, "attr." + t, e)) : e == null ? (n.local ? ws : ys)(n) : (n.local ? vs : xs)(n, i, e));
+}
+function Rs(t, e) {
+  return function(n) {
+    this.setAttribute(t, e.call(this, n));
+  };
+}
+function Ps(t, e) {
+  return function(n) {
+    this.setAttributeNS(t.space, t.local, e.call(this, n));
+  };
+}
+function Bs(t, e) {
+  var n, i;
+  function r() {
+    var s = e.apply(this, arguments);
+    return s !== i && (n = (i = s) && Ps(t, s)), n;
+  }
+  return r._value = e, r;
+}
+function As(t, e) {
+  var n, i;
+  function r() {
+    var s = e.apply(this, arguments);
+    return s !== i && (n = (i = s) && Rs(t, s)), n;
+  }
+  return r._value = e, r;
+}
+function Ms(t, e) {
+  var n = "attr." + t;
+  if (arguments.length < 2) return (n = this.tween(n)) && n._value;
+  if (e == null) return this.tween(n, null);
+  if (typeof e != "function") throw new Error();
+  var i = Tt(t);
+  return this.tween(n, (i.local ? Bs : As)(i, e));
+}
+function Es(t, e) {
+  return function() {
+    ce(this, t).delay = +e.apply(this, arguments);
+  };
+}
+function ks(t, e) {
+  return e = +e, function() {
+    ce(this, t).delay = e;
+  };
+}
+function Is(t) {
+  var e = this._id;
+  return arguments.length ? this.each((typeof t == "function" ? Es : ks)(e, t)) : z(this.node(), e).delay;
+}
+function Ns(t, e) {
+  return function() {
+    $(this, t).duration = +e.apply(this, arguments);
+  };
+}
+function Ls(t, e) {
+  return e = +e, function() {
+    $(this, t).duration = e;
+  };
+}
+function qs(t) {
+  var e = this._id;
+  return arguments.length ? this.each((typeof t == "function" ? Ns : Ls)(e, t)) : z(this.node(), e).duration;
+}
+function Cs(t, e) {
+  if (typeof e != "function") throw new Error();
+  return function() {
+    $(this, t).ease = e;
+  };
+}
+function Fs(t) {
+  var e = this._id;
+  return arguments.length ? this.each(Cs(e, t)) : z(this.node(), e).ease;
+}
+function Hs(t, e) {
+  return function() {
+    var n = e.apply(this, arguments);
+    if (typeof n != "function") throw new Error();
+    $(this, t).ease = n;
+  };
+}
+function zs(t) {
+  if (typeof t != "function") throw new Error();
+  return this.each(Hs(this._id, t));
+}
+function Os(t) {
+  typeof t != "function" && (t = je(t));
+  for (var e = this._groups, n = e.length, i = new Array(n), r = 0; r < n; ++r)
+    for (var s = e[r], o = s.length, h = i[r] = [], a, u = 0; u < o; ++u)
+      (a = s[u]) && t.call(a, a.__data__, u, s) && h.push(a);
+  return new W(i, this._parents, this._name, this._id);
+}
+function Ds(t) {
+  if (t._id !== this._id) throw new Error();
+  for (var e = this._groups, n = t._groups, i = e.length, r = n.length, s = Math.min(i, r), o = new Array(i), h = 0; h < s; ++h)
+    for (var a = e[h], u = n[h], c = a.length, l = o[h] = new Array(c), f, d = 0; d < c; ++d)
+      (f = a[d] || u[d]) && (l[d] = f);
+  for (; h < i; ++h)
+    o[h] = e[h];
+  return new W(o, this._parents, this._name, this._id);
+}
+function $s(t) {
+  return (t + "").trim().split(/^|\s+/).every(function(e) {
+    var n = e.indexOf(".");
+    return n >= 0 && (e = e.slice(0, n)), !e || e === "start";
+  });
+}
+function Ts(t, e, n) {
+  var i, r, s = $s(e) ? ce : $;
+  return function() {
+    var o = s(this, t), h = o.on;
+    h !== i && (r = (i = h).copy()).on(e, n), o.on = r;
+  };
+}
+function Xs(t, e) {
+  var n = this._id;
+  return arguments.length < 2 ? z(this.node(), n).on.on(t) : this.each(Ts(n, t, e));
+}
+function Ys(t) {
+  return function() {
+    var e = this.parentNode;
+    for (var n in this.__transition) if (+n !== t) return;
+    e && e.removeChild(this);
+  };
+}
+function Ws() {
+  return this.on("end.remove", Ys(this._id));
+}
+function Us(t) {
+  var e = this._name, n = this._id;
+  typeof t != "function" && (t = re(t));
+  for (var i = this._groups, r = i.length, s = new Array(r), o = 0; o < r; ++o)
+    for (var h = i[o], a = h.length, u = s[o] = new Array(a), c, l, f = 0; f < a; ++f)
+      (c = h[f]) && (l = t.call(c, c.__data__, f, h)) && ("__data__" in c && (l.__data__ = c.__data__), u[f] = l, Yt(u[f], e, n, f, u, z(c, n)));
+  return new W(s, this._parents, e, n);
+}
+function Gs(t) {
+  var e = this._name, n = this._id;
+  typeof t != "function" && (t = Qe(t));
+  for (var i = this._groups, r = i.length, s = [], o = [], h = 0; h < r; ++h)
+    for (var a = i[h], u = a.length, c, l = 0; l < u; ++l)
+      if (c = a[l]) {
+        for (var f = t.call(c, c.__data__, l, a), d, g = z(c, n), m = 0, x = f.length; m < x; ++m)
+          (d = f[m]) && Yt(d, e, n, m, f, g);
+        s.push(f), o.push(c);
+      }
+  return new W(s, o, e, n);
+}
+var Vs = pt.prototype.constructor;
+function Ks() {
+  return new Vs(this._groups, this._parents);
+}
+function Js(t, e) {
+  var n, i, r;
+  return function() {
+    var s = it(this, t), o = (this.style.removeProperty(t), it(this, t));
+    return s === o ? null : s === n && o === i ? r : r = e(n = s, i = o);
+  };
+}
+function vn(t) {
+  return function() {
+    this.style.removeProperty(t);
+  };
+}
+function Zs(t, e, n) {
+  var i, r = n + "", s;
+  return function() {
+    var o = it(this, t);
+    return o === r ? null : o === i ? s : s = e(i = o, n);
+  };
+}
+function Qs(t, e, n) {
+  var i, r, s;
+  return function() {
+    var o = it(this, t), h = n(this), a = h + "";
+    return h == null && (a = h = (this.style.removeProperty(t), it(this, t))), o === a ? null : o === i && a === r ? s : (r = a, s = e(i = o, h));
+  };
+}
+function js(t, e) {
+  var n, i, r, s = "style." + e, o = "end." + s, h;
+  return function() {
+    var a = $(this, t), u = a.on, c = a.value[s] == null ? h || (h = vn(e)) : void 0;
+    (u !== n || r !== c) && (i = (n = u).copy()).on(o, r = c), a.on = i;
+  };
+}
+function to(t, e, n) {
+  var i = (t += "") == "transform" ? is : xn;
+  return e == null ? this.styleTween(t, Js(t, i)).on("end.style." + t, vn(t)) : typeof e == "function" ? this.styleTween(t, Qs(t, i, le(this, "style." + t, e))).each(js(this._id, t)) : this.styleTween(t, Zs(t, i, e), n).on("end.style." + t, null);
+}
+function eo(t, e, n) {
+  return function(i) {
+    this.style.setProperty(t, e.call(this, i), n);
+  };
+}
+function no(t, e, n) {
+  var i, r;
+  function s() {
+    var o = e.apply(this, arguments);
+    return o !== r && (i = (r = o) && eo(t, o, n)), i;
+  }
+  return s._value = e, s;
+}
+function io(t, e, n) {
+  var i = "style." + (t += "");
+  if (arguments.length < 2) return (i = this.tween(i)) && i._value;
+  if (e == null) return this.tween(i, null);
+  if (typeof e != "function") throw new Error();
+  return this.tween(i, no(t, e, n ?? ""));
+}
+function ro(t) {
+  return function() {
+    this.textContent = t;
+  };
+}
+function so(t) {
+  return function() {
+    var e = t(this);
+    this.textContent = e ?? "";
+  };
+}
+function oo(t) {
+  return this.tween("text", typeof t == "function" ? so(le(this, "text", t)) : ro(t == null ? "" : t + ""));
+}
+function ho(t) {
+  return function(e) {
+    this.textContent = t.call(this, e);
+  };
+}
+function ao(t) {
+  var e, n;
+  function i() {
+    var r = t.apply(this, arguments);
+    return r !== n && (e = (n = r) && ho(r)), e;
+  }
+  return i._value = t, i;
+}
+function uo(t) {
+  var e = "text";
+  if (arguments.length < 1) return (e = this.tween(e)) && e._value;
+  if (t == null) return this.tween(e, null);
+  if (typeof t != "function") throw new Error();
+  return this.tween(e, ao(t));
+}
+function co() {
+  for (var t = this._name, e = this._id, n = _n(), i = this._groups, r = i.length, s = 0; s < r; ++s)
+    for (var o = i[s], h = o.length, a, u = 0; u < h; ++u)
+      if (a = o[u]) {
+        var c = z(a, e);
+        Yt(a, t, n, u, o, {
+          time: c.time + c.delay + c.duration,
+          delay: 0,
+          duration: c.duration,
+          ease: c.ease
+        });
+      }
+  return new W(i, this._parents, t, n);
+}
+function lo() {
+  var t, e, n = this, i = n._id, r = n.size();
+  return new Promise(function(s, o) {
+    var h = { value: o }, a = { value: function() {
+      --r === 0 && s();
+    } };
+    n.each(function() {
+      var u = $(this, i), c = u.on;
+      c !== t && (e = (t = c).copy(), e._.cancel.push(h), e._.interrupt.push(h), e._.end.push(a)), u.on = e;
+    }), r === 0 && s();
+  });
+}
+var fo = 0;
+function W(t, e, n, i) {
+  this._groups = t, this._parents = e, this._name = n, this._id = i;
+}
+function _n() {
+  return ++fo;
+}
+var Y = pt.prototype;
+W.prototype = {
+  constructor: W,
+  select: Us,
+  selectAll: Gs,
+  selectChild: Y.selectChild,
+  selectChildren: Y.selectChildren,
+  filter: Os,
+  merge: Ds,
+  selection: Ks,
+  transition: co,
+  call: Y.call,
+  nodes: Y.nodes,
+  node: Y.node,
+  size: Y.size,
+  empty: Y.empty,
+  each: Y.each,
+  on: Xs,
+  attr: bs,
+  attrTween: Ms,
+  style: to,
+  styleTween: io,
+  text: oo,
+  textTween: uo,
+  remove: Ws,
+  tween: ps,
+  delay: Is,
+  duration: qs,
+  ease: Fs,
+  easeVarying: zs,
+  end: lo,
+  [Symbol.iterator]: Y[Symbol.iterator]
+};
+function go(t) {
+  return ((t *= 2) <= 1 ? t * t * t : (t -= 2) * t * t + 2) / 2;
+}
+var mo = {
+  time: null,
+  // Set on use.
+  delay: 0,
+  duration: 250,
+  ease: go
+};
+function po(t, e) {
+  for (var n; !(n = t.__transition) || !(n = n[e]); )
+    if (!(t = t.parentNode))
+      throw new Error(`transition ${e} not found`);
+  return n;
+}
+function yo(t) {
+  var e, n;
+  t instanceof W ? (e = t._id, t = t._name) : (e = _n(), (n = mo).time = ue(), t = t == null ? null : t + "");
+  for (var i = this._groups, r = i.length, s = 0; s < r; ++s)
+    for (var o = i[s], h = o.length, a, u = 0; u < h; ++u)
+      (a = o[u]) && Yt(a, t, e, u, o, n || po(a, e));
+  return new W(i, this._parents, t, e);
+}
+pt.prototype.interrupt = ds;
+pt.prototype.transition = yo;
+function wo(t) {
+  return Math.abs(t = Math.round(t)) >= 1e21 ? t.toLocaleString("en").replace(/,/g, "") : t.toString(10);
+}
+function Ot(t, e) {
+  if (!isFinite(t) || t === 0) return null;
+  var n = (t = e ? t.toExponential(e - 1) : t.toExponential()).indexOf("e"), i = t.slice(0, n);
+  return [
+    i.length > 1 ? i[0] + i.slice(2) : i,
+    +t.slice(n + 1)
+  ];
+}
+function st(t) {
+  return t = Ot(Math.abs(t)), t ? t[1] : NaN;
+}
+function xo(t, e) {
+  return function(n, i) {
+    for (var r = n.length, s = [], o = 0, h = t[0], a = 0; r > 0 && h > 0 && (a + h + 1 > i && (h = Math.max(1, i - a)), s.push(n.substring(r -= h, r + h)), !((a += h + 1) > i)); )
+      h = t[o = (o + 1) % t.length];
+    return s.reverse().join(e);
+  };
+}
+function vo(t) {
+  return function(e) {
+    return e.replace(/[0-9]/g, function(n) {
+      return t[+n];
+    });
+  };
+}
+var _o = /^(?:(.)?([<>=^]))?([+\-( ])?([$#])?(0)?(\d+)?(,)?(\.\d+)?(~)?([a-z%])?$/i;
+function Dt(t) {
+  if (!(e = _o.exec(t))) throw new Error("invalid format: " + t);
+  var e;
+  return new fe({
+    fill: e[1],
+    align: e[2],
+    sign: e[3],
+    symbol: e[4],
+    zero: e[5],
+    width: e[6],
+    comma: e[7],
+    precision: e[8] && e[8].slice(1),
+    trim: e[9],
+    type: e[10]
+  });
+}
+Dt.prototype = fe.prototype;
+function fe(t) {
+  this.fill = t.fill === void 0 ? " " : t.fill + "", this.align = t.align === void 0 ? ">" : t.align + "", this.sign = t.sign === void 0 ? "-" : t.sign + "", this.symbol = t.symbol === void 0 ? "" : t.symbol + "", this.zero = !!t.zero, this.width = t.width === void 0 ? void 0 : +t.width, this.comma = !!t.comma, this.precision = t.precision === void 0 ? void 0 : +t.precision, this.trim = !!t.trim, this.type = t.type === void 0 ? "" : t.type + "";
+}
+fe.prototype.toString = function() {
+  return this.fill + this.align + this.sign + this.symbol + (this.zero ? "0" : "") + (this.width === void 0 ? "" : Math.max(1, this.width | 0)) + (this.comma ? "," : "") + (this.precision === void 0 ? "" : "." + Math.max(0, this.precision | 0)) + (this.trim ? "~" : "") + this.type;
+};
+function So(t) {
+  t: for (var e = t.length, n = 1, i = -1, r; n < e; ++n)
+    switch (t[n]) {
+      case ".":
+        i = r = n;
+        break;
+      case "0":
+        i === 0 && (i = n), r = n;
+        break;
+      default:
+        if (!+t[n]) break t;
+        i > 0 && (i = 0);
+        break;
+    }
+  return i > 0 ? t.slice(0, i) + t.slice(r + 1) : t;
+}
+var $t;
+function bo(t, e) {
+  var n = Ot(t, e);
+  if (!n) return $t = void 0, t.toPrecision(e);
+  var i = n[0], r = n[1], s = r - ($t = Math.max(-8, Math.min(8, Math.floor(r / 3))) * 3) + 1, o = i.length;
+  return s === o ? i : s > o ? i + new Array(s - o + 1).join("0") : s > 0 ? i.slice(0, s) + "." + i.slice(s) : "0." + new Array(1 - s).join("0") + Ot(t, Math.max(0, e + s - 1))[0];
+}
+function Ce(t, e) {
+  var n = Ot(t, e);
+  if (!n) return t + "";
+  var i = n[0], r = n[1];
+  return r < 0 ? "0." + new Array(-r).join("0") + i : i.length > r + 1 ? i.slice(0, r + 1) + "." + i.slice(r + 1) : i + new Array(r - i.length + 2).join("0");
+}
+const Fe = {
+  "%": (t, e) => (t * 100).toFixed(e),
+  b: (t) => Math.round(t).toString(2),
+  c: (t) => t + "",
+  d: wo,
+  e: (t, e) => t.toExponential(e),
+  f: (t, e) => t.toFixed(e),
+  g: (t, e) => t.toPrecision(e),
+  o: (t) => Math.round(t).toString(8),
+  p: (t, e) => Ce(t * 100, e),
+  r: Ce,
+  s: bo,
+  X: (t) => Math.round(t).toString(16).toUpperCase(),
+  x: (t) => Math.round(t).toString(16)
+};
+function He(t) {
+  return t;
+}
+var ze = Array.prototype.map, Oe = ["y", "z", "a", "f", "p", "n", "µ", "m", "", "k", "M", "G", "T", "P", "E", "Z", "Y"];
+function Ro(t) {
+  var e = t.grouping === void 0 || t.thousands === void 0 ? He : xo(ze.call(t.grouping, Number), t.thousands + ""), n = t.currency === void 0 ? "" : t.currency[0] + "", i = t.currency === void 0 ? "" : t.currency[1] + "", r = t.decimal === void 0 ? "." : t.decimal + "", s = t.numerals === void 0 ? He : vo(ze.call(t.numerals, String)), o = t.percent === void 0 ? "%" : t.percent + "", h = t.minus === void 0 ? "−" : t.minus + "", a = t.nan === void 0 ? "NaN" : t.nan + "";
+  function u(l, f) {
+    l = Dt(l);
+    var d = l.fill, g = l.align, m = l.sign, x = l.symbol, y = l.zero, w = l.width, _ = l.comma, S = l.precision, A = l.trim, v = l.type;
+    v === "n" ? (_ = !0, v = "g") : Fe[v] || (S === void 0 && (S = 12), A = !0, v = "g"), (y || d === "0" && g === "=") && (y = !0, d = "0", g = "=");
+    var L = (f && f.prefix !== void 0 ? f.prefix : "") + (x === "$" ? n : x === "#" && /[boxX]/.test(v) ? "0" + v.toLowerCase() : ""), R = (x === "$" ? i : /[%p]/.test(v) ? o : "") + (f && f.suffix !== void 0 ? f.suffix : ""), I = Fe[v], B = /[defgprs%]/.test(v);
+    S = S === void 0 ? 6 : /[gprs]/.test(v) ? Math.max(1, Math.min(21, S)) : Math.max(0, Math.min(20, S));
+    function T(p) {
+      var P = L, b = R, M, me, wt;
+      if (v === "c")
+        b = I(p) + b, p = "";
+      else {
+        p = +p;
+        var xt = p < 0 || 1 / p < 0;
+        if (p = isNaN(p) ? a : I(Math.abs(p), S), A && (p = So(p)), xt && +p == 0 && m !== "+" && (xt = !1), P = (xt ? m === "(" ? m : h : m === "-" || m === "(" ? "" : m) + P, b = (v === "s" && !isNaN(p) && $t !== void 0 ? Oe[8 + $t / 3] : "") + b + (xt && m === "(" ? ")" : ""), B) {
+          for (M = -1, me = p.length; ++M < me; )
+            if (wt = p.charCodeAt(M), 48 > wt || wt > 57) {
+              b = (wt === 46 ? r + p.slice(M + 1) : p.slice(M)) + b, p = p.slice(0, M);
+              break;
+            }
+        }
+      }
+      _ && !y && (p = e(p, 1 / 0));
+      var vt = P.length + p.length + b.length, X = vt < w ? new Array(w - vt + 1).join(d) : "";
+      switch (_ && y && (p = e(X + p, X.length ? w - b.length : 1 / 0), X = ""), g) {
+        case "<":
+          p = P + p + b + X;
+          break;
+        case "=":
+          p = P + X + p + b;
+          break;
+        case "^":
+          p = X.slice(0, vt = X.length >> 1) + P + p + b + X.slice(vt);
+          break;
+        default:
+          p = X + P + p + b;
+          break;
+      }
+      return s(p);
+    }
+    return T.toString = function() {
+      return l + "";
+    }, T;
+  }
+  function c(l, f) {
+    var d = Math.max(-8, Math.min(8, Math.floor(st(f) / 3))) * 3, g = Math.pow(10, -d), m = u((l = Dt(l), l.type = "f", l), { suffix: Oe[8 + d / 3] });
+    return function(x) {
+      return m(g * x);
+    };
+  }
+  return {
+    format: u,
+    formatPrefix: c
+  };
+}
+var Rt, Sn, bn;
+Po({
+  thousands: ",",
+  grouping: [3],
+  currency: ["$", ""]
+});
+function Po(t) {
+  return Rt = Ro(t), Sn = Rt.format, bn = Rt.formatPrefix, Rt;
+}
+function Bo(t) {
+  return Math.max(0, -st(Math.abs(t)));
+}
+function Ao(t, e) {
+  return Math.max(0, Math.max(-8, Math.min(8, Math.floor(st(e) / 3))) * 3 - st(Math.abs(t)));
+}
+function Mo(t, e) {
+  return t = Math.abs(t), e = Math.abs(e) - t, Math.max(0, st(e) - st(t)) + 1;
+}
+function Rn(t) {
+  for (var e = -1, n = t.length, i, r = t[n - 1], s = 0; ++e < n; )
+    i = r, r = t[e], s += i[1] * r[0] - i[0] * r[1];
+  return s / 2;
+}
+function Eo(t) {
+  for (var e = -1, n = t.length, i = 0, r = 0, s, o = t[n - 1], h, a = 0; ++e < n; )
+    s = o, o = t[e], a += h = s[0] * o[1] - o[0] * s[1], i += (s[0] + o[0]) * h, r += (s[1] + o[1]) * h;
+  return a *= 3, [i / a, r / a];
+}
+function ko(t, e, n) {
+  return (e[0] - t[0]) * (n[1] - t[1]) - (e[1] - t[1]) * (n[0] - t[0]);
+}
+function Io(t, e) {
+  return t[0] - e[0] || t[1] - e[1];
+}
+function De(t) {
+  const e = t.length, n = [0, 1];
+  let i = 2, r;
+  for (r = 2; r < e; ++r) {
+    for (; i > 1 && ko(t[n[i - 2]], t[n[i - 1]], t[r]) <= 0; ) --i;
+    n[i++] = r;
+  }
+  return n.slice(0, i);
+}
+function No(t) {
+  if ((n = t.length) < 3) return null;
+  var e, n, i = new Array(n), r = new Array(n);
+  for (e = 0; e < n; ++e) i[e] = [+t[e][0], +t[e][1], e];
+  for (i.sort(Io), e = 0; e < n; ++e) r[e] = [i[e][0], -i[e][1]];
+  var s = De(i), o = De(r), h = o[0] === s[0], a = o[o.length - 1] === s[s.length - 1], u = [];
+  for (e = s.length - 1; e >= 0; --e) u.push(t[i[s[e]][2]]);
+  for (e = +h; e < o.length - a; ++e) u.push(t[i[o[e]][2]]);
+  return u;
+}
+function Pn(t, e) {
+  for (var n = t.length, i = t[n - 1], r = e[0], s = e[1], o = i[0], h = i[1], a, u, c = !1, l = 0; l < n; ++l)
+    i = t[l], a = i[0], u = i[1], u > s != h > s && r < (o - a) * (s - u) / (h - u) + a && (c = !c), o = a, h = u;
+  return c;
+}
+function Bn(t, e) {
+  switch (arguments.length) {
+    case 0:
+      break;
+    case 1:
+      this.range(t);
+      break;
+    default:
+      this.range(e).domain(t);
+      break;
+  }
+  return this;
+}
+const $e = Symbol("implicit");
+function An() {
+  var t = new we(), e = [], n = [], i = $e;
+  function r(s) {
+    let o = t.get(s);
+    if (o === void 0) {
+      if (i !== $e) return i;
+      t.set(s, o = e.push(s) - 1);
+    }
+    return n[o % n.length];
+  }
+  return r.domain = function(s) {
+    if (!arguments.length) return e.slice();
+    e = [], t = new we();
+    for (const o of s)
+      t.has(o) || t.set(o, e.push(o) - 1);
+    return r;
+  }, r.range = function(s) {
+    return arguments.length ? (n = Array.from(s), r) : n.slice();
+  }, r.unknown = function(s) {
+    return arguments.length ? (i = s, r) : i;
+  }, r.copy = function() {
+    return An(e, n).unknown(i);
+  }, Bn.apply(r, arguments), r;
+}
+function Lo(t) {
+  return function() {
+    return t;
+  };
+}
+function qo(t) {
+  return +t;
+}
+var Te = [0, 1];
+function et(t) {
+  return t;
+}
+function ie(t, e) {
+  return (e -= t = +t) ? function(n) {
+    return (n - t) / e;
+  } : Lo(isNaN(e) ? NaN : 0.5);
+}
+function Co(t, e) {
+  var n;
+  return t > e && (n = t, t = e, e = n), function(i) {
+    return Math.max(t, Math.min(e, i));
+  };
+}
+function Fo(t, e, n) {
+  var i = t[0], r = t[1], s = e[0], o = e[1];
+  return r < i ? (i = ie(r, i), s = n(o, s)) : (i = ie(i, r), s = n(s, o)), function(h) {
+    return s(i(h));
+  };
+}
+function Ho(t, e, n) {
+  var i = Math.min(t.length, e.length) - 1, r = new Array(i), s = new Array(i), o = -1;
+  for (t[i] < t[0] && (t = t.slice().reverse(), e = e.slice().reverse()); ++o < i; )
+    r[o] = ie(t[o], t[o + 1]), s[o] = n(e[o], e[o + 1]);
+  return function(h) {
+    var a = On(t, h, 1, i) - 1;
+    return s[a](r[a](h));
+  };
+}
+function zo(t, e) {
+  return e.domain(t.domain()).range(t.range()).interpolate(t.interpolate()).clamp(t.clamp()).unknown(t.unknown());
+}
+function Oo() {
+  var t = Te, e = Te, n = ae, i, r, s, o = et, h, a, u;
+  function c() {
+    var f = Math.min(t.length, e.length);
+    return o !== et && (o = Co(t[0], t[f - 1])), h = f > 2 ? Ho : Fo, a = u = null, l;
+  }
+  function l(f) {
+    return f == null || isNaN(f = +f) ? s : (a || (a = h(t.map(i), e, n)))(i(o(f)));
+  }
+  return l.invert = function(f) {
+    return o(r((u || (u = h(e, t.map(i), q)))(f)));
+  }, l.domain = function(f) {
+    return arguments.length ? (t = Array.from(f, qo), c()) : t.slice();
+  }, l.range = function(f) {
+    return arguments.length ? (e = Array.from(f), c()) : e.slice();
+  }, l.rangeRound = function(f) {
+    return e = Array.from(f), n = ts, c();
+  }, l.clamp = function(f) {
+    return arguments.length ? (o = f ? !0 : et, c()) : o !== et;
+  }, l.interpolate = function(f) {
+    return arguments.length ? (n = f, c()) : n;
+  }, l.unknown = function(f) {
+    return arguments.length ? (s = f, l) : s;
+  }, function(f, d) {
+    return i = f, r = d, c();
+  };
+}
+function Do() {
+  return Oo()(et, et);
+}
+function $o(t, e, n, i) {
+  var r = Gn(t, e, n), s;
+  switch (i = Dt(i ?? ",f"), i.type) {
+    case "s": {
+      var o = Math.max(Math.abs(t), Math.abs(e));
+      return i.precision == null && !isNaN(s = Ao(r, o)) && (i.precision = s), bn(i, o);
+    }
+    case "":
+    case "e":
+    case "g":
+    case "p":
+    case "r": {
+      i.precision == null && !isNaN(s = Mo(r, Math.max(Math.abs(t), Math.abs(e)))) && (i.precision = s - (i.type === "e"));
+      break;
+    }
+    case "f":
+    case "%": {
+      i.precision == null && !isNaN(s = Bo(r)) && (i.precision = s - (i.type === "%") * 2);
+      break;
+    }
+  }
+  return Sn(i);
+}
+function To(t) {
+  var e = t.domain;
+  return t.ticks = function(n) {
+    var i = e();
+    return Un(i[0], i[i.length - 1], n ?? 10);
+  }, t.tickFormat = function(n, i) {
+    var r = e();
+    return $o(r[0], r[r.length - 1], n ?? 10, i);
+  }, t.nice = function(n) {
+    n == null && (n = 10);
+    var i = e(), r = 0, s = i.length - 1, o = i[r], h = i[s], a, u, c = 10;
+    for (h < o && (u = o, o = h, h = u, u = r, r = s, s = u); c-- > 0; ) {
+      if (u = Kt(o, h, n), u === a)
+        return i[r] = o, i[s] = h, e(i);
+      if (u > 0)
+        o = Math.floor(o / u) * u, h = Math.ceil(h / u) * u;
+      else if (u < 0)
+        o = Math.ceil(o * u) / u, h = Math.floor(h * u) / u;
+      else
+        break;
+      a = u;
+    }
+    return t;
+  }, t;
+}
+function E() {
+  var t = Do();
+  return t.copy = function() {
+    return zo(t, E());
+  }, Bn.apply(t, arguments), To(t);
+}
+function Xo(t) {
+  for (var e = t.length / 6 | 0, n = new Array(e), i = 0; i < e; ) n[i] = "#" + t.slice(i * 6, ++i * 6);
+  return n;
+}
+const Yo = Xo("1f77b4ff7f0e2ca02cd627289467bd8c564be377c27f7f7fbcbd2217becf");
+function lt(t, e, n) {
+  this.k = t, this.x = e, this.y = n;
+}
+lt.prototype = {
+  constructor: lt,
+  scale: function(t) {
+    return t === 1 ? this : new lt(this.k * t, this.x, this.y);
+  },
+  translate: function(t, e) {
+    return t === 0 & e === 0 ? this : new lt(this.k, this.x + this.k * t, this.y + this.k * e);
+  },
+  apply: function(t) {
+    return [t[0] * this.k + this.x, t[1] * this.k + this.y];
+  },
+  applyX: function(t) {
+    return t * this.k + this.x;
+  },
+  applyY: function(t) {
+    return t * this.k + this.y;
+  },
+  invert: function(t) {
+    return [(t[0] - this.x) / this.k, (t[1] - this.y) / this.k];
+  },
+  invertX: function(t) {
+    return (t - this.x) / this.k;
+  },
+  invertY: function(t) {
+    return (t - this.y) / this.k;
+  },
+  rescaleX: function(t) {
+    return t.copy().domain(t.range().map(this.invertX, this).map(t.invert, t));
+  },
+  rescaleY: function(t) {
+    return t.copy().domain(t.range().map(this.invertY, this).map(t.invert, t));
+  },
+  toString: function() {
+    return "translate(" + this.x + "," + this.y + ") scale(" + this.k + ")";
+  }
+};
+lt.prototype;
+const O = 0.15;
+let U, G;
+function Wo(t, e, n) {
+  const i = e, r = e, s = ye(t, (h) => h[0]), o = ye(t, (h) => h[1]);
+  if (n.x_map_range && n.y_map_range) {
+    const h = n.x_map_range, a = n.y_map_range, u = h[1] - h[0], c = a[1] - a[0], l = u / c;
+    if (l > 1) {
+      const f = (r - (r - 2 * O * r) * (1 / l)) / 2;
+      return U = E().domain(s).range([O * i, i - O * i]), G = E().domain(o).range([f, r - f]), t.map((d) => [U(d[0]), G(d[1])]);
+    } else {
+      const f = i - (i - 2 * O * i) * l;
+      return U = E().domain(s).range([f, i - f]), G = E().domain(o).range([O * r, r - O * r]), t.map((d) => [U(d[0]), G(d[1])]);
+    }
+  }
+  return U = E().domain(s).range([O * i, i - O * i]), G = E().domain(o).range([O * r, r - O * r]), t.map((h) => [U(h[0]), G(h[1])]);
+}
+function Xe(t, e, n, i, r, s, o, h, a, u, c = !0) {
+  const l = t.style;
+  l === "dot" ? ge(
+    e,
+    n,
+    i,
+    r,
+    s,
+    o,
+    a
+  ) : l === "monochrome" ? En(
+    e,
+    n,
+    i,
+    r,
+    s,
+    o,
+    h,
+    a,
+    u,
+    t
+  ) : l === "dot_map" && Mn(
+    e,
+    n,
+    i,
+    r,
+    s,
+    o,
+    a,
+    u,
+    t,
+    c
+  );
+}
+function Uo(t, e, n, i, r) {
+  t.beginPath(), t.arc(n, i, e, 0, 2 * Math.PI), t.fillStyle = k(r).copy({ opacity: 0.15 }), t.fill(), t.closePath();
+}
+function Go(t, e, n, i, r, s) {
+  t.beginPath(), t.rect(e, n, i - e, r - n), t.fillStyle = k(s).copy({ opacity: 0.15 }), t.fill(), t.closePath();
+}
+function Vo(t, e, n, i, r, s) {
+  const o = Math.sqrt((i - e) ** 2 + (r - n) ** 2) * (1 / Math.sqrt(2));
+  t.beginPath(), t.arc(e, n, o, 0, 2 * Math.PI), t.fillStyle = k(s).copy({ opacity: 0.15 }), t.fill(), t.closePath();
+}
+function de(t, e) {
+  t.clearRect(0, 0, e, e);
+}
+function ht(t, e, n, i, r, s, o, h, a, u, c, l, f, d = void 0, g = void 0) {
+  let m;
+  const x = (y) => {
+    m || (m = y);
+    const w = (y - m) / l, _ = u.map((S, A) => [S[0] + (c[A][0] - S[0]) * w, S[1] + (c[A][1] - S[1]) * w]);
+    de(o, h), t === "dot" ? ge(
+      e,
+      n,
+      i,
+      r,
+      s,
+      o,
+      _
+    ) : t === "monochrome" ? En(
+      e,
+      n,
+      i,
+      r,
+      s,
+      o,
+      a,
+      _,
+      h,
+      f
+    ) : t === "dot_map" && Mn(
+      e,
+      n,
+      i,
+      r,
+      s,
+      o,
+      _,
+      h,
+      f,
+      !1
+    ), g && g(w), w < 1 ? requestAnimationFrame(x) : d && d();
+  };
+  requestAnimationFrame(x);
+}
+function Ko(t, e, n, i, r = void 0, s = void 0, o = void 0) {
+  let h, a = 0;
+  const u = (c) => {
+    h || (h = c);
+    const l = (c - h) / n, f = (l - Math.floor(l)) / (i / n) > 1 ? 100 : (l - Math.floor(l)) / (i / n);
+    de(t, e), l - a >= 1 && (a = parseInt(Math.floor(l)), r && r()), s && s(l, f), o() || requestAnimationFrame(u);
+  };
+  requestAnimationFrame(u);
+}
+function ge(t, e, n, i, r, s, o) {
+  const h = Array.from(Array(o.length).keys());
+  h.sort((a, u) => r[a] - r[u]);
+  for (let a = 0; a < o.length; a++) {
+    const u = h[a];
+    s.beginPath(), s.arc(o[u][0], o[u][1], t[u], 0, 2 * Math.PI), s.fillStyle = k(e[u]).copy({ opacity: n[u] }), s.fill(), s.closePath();
+  }
+}
+function Mn(t, e, n, i, r, s, o, h, a, u = !0) {
+  u && a.geoJson.features.forEach((l) => {
+    l.geometry.coordinates.forEach((d) => {
+      d.forEach((g, m) => {
+        let x = a.x_inverse ? U(-g[0]) : U(g[0]), y = a.y_inverse ? G(-g[1]) : G(g[1]);
+        m === 0 ? (s.beginPath(), s.moveTo(x, y)) : s.lineTo(x, y);
+      });
+    }), s.strokeStyle = "black", s.lineWidth = 0.5, s.stroke(), s.closePath();
+  }), ge(t, e, n, i, r, s, o);
+}
+function En(t, e, n, i, r, s, o, h, a, u) {
+  const c = u.pixelWidth, l = u.pixelHeight, f = u.inversed, d = u.removeBackground, g = V(o.map((y) => V(y)));
+  o = o.map((y) => y.map((w) => w / g));
+  const m = Array.from(Array(h.length).keys());
+  m.sort((y, w) => r[y] - r[w]);
+  const x = s.createImageData(a, a);
+  for (let y = 0; y < h.length; y++) {
+    const w = m[y], _ = parseInt(h[w][0] - 0.5 * t[w]), S = parseInt(h[w][1] - 0.5 * t[w]), A = k(e[w]);
+    for (let v = 0; v < t[w]; v++)
+      for (let L = 0; L < t[w]; L++) {
+        const R = (_ + v + (S + L) * a) * 4, I = parseInt(v / t[w] * c), B = parseInt(L / t[w] * l), T = I + B * c;
+        let p = o[w][T] * 255;
+        f && (p = 255 - p), p < 255 && (p = 255 - (255 - p) * n[w]);
+        const P = A.r, b = A.g, M = A.b;
+        d && p === 255 || (x.data[R] = P, x.data[R + 1] = b, x.data[R + 2] = M, x.data[R + 3] = 255 - p);
+      }
+  }
+  s.putImageData(x, 0, 0);
+  for (let y = 0; y < h.length; y++) {
+    const w = parseInt(h[y][0]), _ = parseInt(h[y][1]);
+    i[y] && (s.beginPath(), s.arc(w, _, t[y] / 1.5, 0, 2 * Math.PI), s.strokeStyle = k("black").copy({ opacity: n[y] }), s.lineWidth = 0.3, s.stroke(), s.closePath());
+  }
+}
+function Ye(t, e, n, i, r) {
+  let s = [];
+  for (let a = 0; a < t.length; a++)
+    Math.sqrt(
+      Math.pow(t[a][0] - e, 2) + Math.pow(t[a][1] - n, 2)
+    ) < i && s.push(a);
+  let o = 0, h = -1;
+  for (let a = 0; a < s.length; a++)
+    r[s[a]] > o && (o = r[s[a]], h = s[a]);
+  return h;
+}
+function Jo(t, e, n, i, r, s, o) {
+  return e[o].filter((u) => Math.sqrt(
+    Math.pow(t[u][0] - n, 2) + Math.pow(t[u][1] - i, 2)
+  ) < r);
+}
+function at(t, e, n, i) {
+  return t.map((s) => Math.sqrt(
+    Math.pow(s[0] - e, 2) + Math.pow(s[1] - n, 2)
+  ) < i).map((s, o) => s ? o : -1).filter((s) => s !== -1);
+}
+function Pt(t, e, n, i) {
+  const r = n.map((s, o) => {
+    const h = i[o].slice(0, e), a = h.filter((f) => t.includes(f)), u = h.reduce((f, d) => f + s[d], 0);
+    return a.reduce((f, d) => f + s[d], 0) / u;
+  });
+  return r.map((s, o) => t.includes(o) ? 0 : s), r;
+}
+function kn(t, e, n, i, r) {
+  const s = t - n, o = e - i, h = K(t, e, n, i), a = r / h;
+  return [s * a, o * a];
+}
+function K(t, e, n, i) {
+  return Math.sqrt(Math.pow(t - n, 2) + Math.pow(e - i, 2));
+}
+const Zo = 0.3, Qo = 0.15, tt = 1e-6;
+function H(t) {
+  return Array.isArray(t) && Number.isFinite(t[0]) && Number.isFinite(t[1]);
+}
+function mt(t) {
+  return H(t) ? [t[0], t[1]] : [0, 0];
+}
+function Gt(t) {
+  return Number.isFinite(t) ? t : 0;
+}
+function We(t, e = [0, 0]) {
+  const n = t.filter(H);
+  if (n.length === 0) return mt(e);
+  const i = n.reduce((r, s) => [r[0] + s[0], r[1] + s[1]], [0, 0]);
+  return [i[0] / n.length, i[1] / n.length];
+}
+function jo(t, e) {
+  const n = Array.isArray(t) ? t.filter(H) : [];
+  if (n.length >= 3 && Math.abs(Rn(n)) > tt) {
+    const i = Eo(n);
+    if (H(i)) return i;
+  }
+  return We(e, We(n));
+}
+function Ue(t, e, n) {
+  const i = t.filter(H).map((r) => K(r[0], r[1], e[0], e[1])).filter(Number.isFinite);
+  return i.length === 0 ? n : Math.max(n, ...i);
+}
+function th(t, e, n, i) {
+  const r = t[0] - e[0], s = t[1] - e[1], o = Math.sqrt(r * r + s * s);
+  if (Number.isFinite(o) && o > tt) return [r / o, s / o];
+  const h = 2 * Math.PI * n / Math.max(i, 1);
+  return [Math.cos(h), Math.sin(h)];
+}
+function In(t, e, n) {
+  if (!H(e)) return mt(t);
+  const i = e[0] - t[0], r = e[1] - t[1], s = Math.sqrt(i * i + r * r);
+  if (!Number.isFinite(s) || s <= n || s <= tt) return mt(e);
+  const o = n / s;
+  return [t[0] + i * o, t[1] + r * o];
+}
+function eh(t, e, n, i, r) {
+  if (!H(e)) return mt(t);
+  const s = K(t[0], t[1], n[0], n[1]), h = K(e[0], e[1], n[0], n[1]) < s ? r : i;
+  return In(t, e, h);
+}
+function nh(t, e, n) {
+  return Number.isFinite(t) ? n - e <= tt ? 0.5 : (t - e) / (n - e) : 0;
+}
+function ih(t) {
+  return Array.isArray(t) && t.filter(H).length >= 3 && Math.abs(Rn(t.filter(H))) > tt;
+}
+function rh(t, e, n, i, r, s) {
+  return r.map((h, a) => {
+    if (t.includes(a))
+      return h;
+    {
+      const u = kn(
+        h[0],
+        h[1],
+        e,
+        n,
+        i
+      );
+      return s[a] === 1 ? K(h[0], h[1], e, n) <= i ? [h[0], h[1]] : [e + u[0], n + u[1]] : s[a] === 0 ? K(h[0], h[1], e, n) > 3 * i ? [h[0], h[1]] : [e + u[0] * 4, n + u[1] * 4] : [e + u[0] * (3 - 2 * s[a]), n + u[1] * (3 - 2 * s[a])];
+    }
+  });
+}
+function Nn(t, e) {
+  const n = Ln(t);
+  return t.map((r, s) => {
+    const h = [1, n[s][0]], a = [
+      h[0] / Math.sqrt(h[0] ** 2 + h[1] ** 2),
+      h[1] / Math.sqrt(h[0] ** 2 + h[1] ** 2)
+    ], u = r[0], c = r[1];
+    return Pn(t, [u + a[0] * 0.01, c + a[1] * 0.01]) ? [u - a[0] * e, c - a[1] * e] : [u + a[0] * e, c + a[1] * e];
+  });
+}
+function sh(t, e, n, i, r, s) {
+  const o = r - n, h = s - i, a = o * o + h * h, u = ((t - n) * o + (e - i) * h) / a, c = Math.max(0, Math.min(1, u)), l = n + c * o, f = i + c * h, d = Math.sqrt((l - n) ** 2 + (f - i) ** 2), g = Math.sqrt((l - r) ** 2 + (f - s) ** 2), m = Math.sqrt((n - r) ** 2 + (i - s) ** 2), x = Math.sqrt((l - t) ** 2 + (f - e) ** 2), y = Math.sqrt((t - n) ** 2 + (e - i) ** 2), w = Math.sqrt((t - r) ** 2 + (e - s) ** 2);
+  return d + g > m ? Math.min(y, w) : x;
+}
+function oh(t, e, n, i, r) {
+  let s = [0, 1], o = 1e8;
+  for (let v = 0; v < i.length; v++) {
+    const L = v, R = (v + 1) % i.length, I = sh(
+      t,
+      e,
+      i[L][0],
+      i[L][1],
+      i[R][0],
+      i[R][1]
+    );
+    I < o && (o = I, s = [L, R]);
+  }
+  const h = (i[s[1]][1] - i[s[0]][1]) / (i[s[1]][0] - i[s[0]][0]), a = e - h * t, u = n[s[0]][0], c = n[s[0]][1], l = (a - c) / (u - h), f = u * l + c, d = n[s[1]][0], g = n[s[1]][1], m = (a - g) / (d - h), x = d * m + g, y = K(t, e, l, f), w = K(t, e, m, x), _ = y / (y + w), S = [
+    i[s[0]][0] * (1 - _) + i[s[1]][0] * _,
+    i[s[0]][1] * (1 - _) + i[s[1]][1] * _
+  ];
+  return {
+    slope: kn(
+      t,
+      e,
+      S[0],
+      S[1],
+      r
+    ),
+    hullStartPoint: S
+  };
+}
+function Ln(t) {
+  return t.map((e, n) => {
+    const i = (n + 1) % t.length, r = (n - 1 + t.length) % t.length, s = t[i], o = t[r], h = [e[0] - s[0], e[1] - s[1]], a = [e[0] - o[0], e[1] - o[1]], u = [
+      h[0] / Math.sqrt(h[0] ** 2 + h[1] ** 2),
+      h[1] / Math.sqrt(h[0] ** 2 + h[1] ** 2)
+    ], c = [
+      a[0] / Math.sqrt(a[0] ** 2 + a[1] ** 2),
+      a[1] / Math.sqrt(a[0] ** 2 + a[1] ** 2)
+    ], l = [u[0] + c[0], u[1] + c[1]], f = l[1] / l[0], d = e[1] - f * e[0];
+    return [f, d];
+  });
+}
+function Ge(t, e, n) {
+  return Pn(n, [t, e]);
+}
+function hh(t, e, n, i, r, s) {
+  const o = Array.from(t ?? []).filter((R) => Number.isInteger(R) && H(n[R])), h = new Set(o), a = o.map((R) => n[R]), u = r * Zo, c = r * Qo, l = Array.isArray(e) ? e.filter(H) : [], f = ih(l), d = jo(l, a), g = Ue(l, d, Ue(a, d, r)), m = Math.max(1, Math.min(g * 0.35, r * 0.5)), x = Math.max(g + r * 0.5, m + r * 0.5), y = o.map((R) => Gt(i == null ? void 0 : i[R])), w = y.length > 0 ? Vn(y) : 0, _ = y.length > 0 ? V(y) : 1, S = new Map(o.map((R, I) => [R, I])), A = f ? Ln(l) : [], v = f ? Nn(l, r * 2) : [];
+  return n.map((R, I) => {
+    const B = mt(R);
+    if (h.has(I)) {
+      const T = Gt(i == null ? void 0 : i[I]), p = nh(T, w, _), P = th(
+        B,
+        d,
+        S.get(I) ?? 0,
+        o.length
+      ), b = m + (1 - p) * (x - m), M = [
+        d[0] + P[0] * b,
+        d[1] + P[1] * b
+      ];
+      return eh(B, M, d, u, c);
+    } else {
+      if (!f) return B;
+      const T = oh(
+        B[0],
+        B[1],
+        A,
+        l,
+        r
+      );
+      let p = T.slope;
+      const P = T.hullStartPoint, b = Gt(i == null ? void 0 : i[I]);
+      let M;
+      if (b >= 1 - tt) {
+        if (Ge(B[0], B[1], l))
+          return B;
+        M = [P[0], P[1]];
+      } else if (b <= tt) {
+        if (!Ge(B[0], B[1], v))
+          return B;
+        M = [P[0] + p[0] * 3, P[1] + p[1] * 3];
+      } else
+        M = [
+          P[0] + p[0] * (2 - 2 * b),
+          P[1] + p[1] * (2 - 2 * b)
+        ];
+      return In(B, M, u);
+    }
+  });
+}
+function ah(t, e, n, i, r, s, o) {
+  t.beginPath(), t.arc(r, s, e, 0, 2 * Math.PI), t.strokeStyle = k(n).copy({ opacity: o }), t.lineWidth = i, t.stroke(), t.closePath();
+}
+function uh(t, e, n, i, r = 20) {
+  const s = [];
+  t = { x: t[0], y: t[1] }, e = { x: e[0], y: e[1] }, n = { x: n[0], y: n[1] }, i = { x: i[0], y: i[1] };
+  for (let o = 0; o < r; o++) {
+    const h = o / (r - 1), a = h * h, u = a * h, c = -u + 2 * a - h, l = 3 * u - 5 * a + 2, f = -3 * u + 4 * a + h, d = u - a, g = 0.5 * (t.x * c + e.x * l + n.x * f + i.x * d), m = 0.5 * (t.y * c + e.y * l + n.y * f + i.y * d);
+    s.push({ x: g, y: m });
+  }
+  return s;
+}
+function ch(t, e, n, i, r) {
+  t.beginPath(), t.strokeStyle = k(n).copy({ opacity: r }), t.lineWidth = i;
+  for (let s = 0; s < e.length; s++) {
+    const o = e[(s - 1 + e.length) % e.length], h = e[s], a = e[(s + 1) % e.length], u = e[(s + 2) % e.length], c = uh(o, h, a, u, 20);
+    s === 0 && t.moveTo(c[0].x, c[0].y), c.forEach((l, f) => {
+      f > 0 && t.lineTo(l.x, l.y);
+    });
+  }
+  t.closePath(), t.stroke();
+}
+function lh(t, e, n, i, r, s) {
+  const o = s.color, h = s.strokeWidth;
+  ah(t, e * 3, o, h, n, i, r);
+}
+function fh(t) {
+  return t.length < 3 && (t.push([t[0][0] + 1, t[0][1] + 1]), t.push([t[0][0] + 1, t[0][1] - 1]), t.push([t[0][0] - 1, t[0][1] + 1]), t.push([t[0][0] - 1, t[0][1] - 1]), t.length === 2 && (t.push([t[1][0] + 1, t[1][1] + 1]), t.push([t[1][0] + 1, t[1][1] - 1]), t.push([t[1][0] - 1, t[1][1] + 1]), t.push([t[1][0] - 1, t[1][1] - 1]))), No(t);
+}
+function J(t, e, n, i, r) {
+  const s = i.color, o = i.strokeWidth;
+  ch(t, Nn(e, r), s, o, n);
+}
+function Bt(t, e, n) {
+  let i = [];
+  return t.forEach((r, s) => {
+    e[r].forEach((h, a) => {
+      h > 1 - n && i.push(a);
+    });
+  }), i = [...new Set(i)], i;
+}
+function dh(t, e, n, i, r) {
+  e > i && ([e, i] = [i, e]), n > r && ([n, r] = [r, n]);
+  const s = [];
+  return t.forEach((o, h) => {
+    o[0] >= e && o[0] <= i && o[1] >= n && o[1] <= r && s.push(h);
+  }), s;
+}
+function gh(t, e) {
+  let n = new Array(e[0].length).fill(0), i = new Array(e[0].length).fill(0);
+  t.forEach((s) => {
+    e[s].forEach((o, h) => {
+      o < n[h] && (n[h] = o), o > i[h] && (i[h] = o);
+    });
+  });
+  const r = [];
+  return e.forEach((s, o) => {
+    let h = !0;
+    s.forEach((a, u) => {
+      (a < n[u] || a > i[u]) && (h = !1);
+    }), h && r.push(o);
+  }), r;
+}
+function mh(t, e, n, i, r) {
+  const s = Math.sqrt((i - e) ** 2 + (r - n) ** 2) * (1 / Math.sqrt(2)), o = [];
+  return t.forEach((h, a) => {
+    (h[0] - e) ** 2 + (h[1] - n) ** 2 <= s ** 2 && o.push(a);
+  }), o;
+}
+function ph(t, e, n, i, r) {
+  let s = -1, o = 1 / 0;
+  t.forEach((l) => {
+    const f = (n[l][0] - i) ** 2 + (n[l][1] - r) ** 2;
+    f < o && (o = f, s = l);
+  });
+  let h = 0, a = -1;
+  if (t.forEach((l) => {
+    const f = (n[l][0] - n[s][0]) ** 2 + (n[l][1] - n[s][1]) ** 2;
+    f > h && (h = f, a = l);
+  }), a === -1)
+    return t;
+  let u = 0;
+  console.log(e[a], a), e[s].forEach((l, f) => {
+    u += (l - e[a][f]) ** 2;
+  }), u = Math.sqrt(u);
+  const c = [];
+  return e.forEach((l, f) => {
+    let d = 0;
+    l.forEach((g, m) => {
+      d += (g - e[s][m]) ** 2;
+    }), d = Math.sqrt(d), d <= u && c.push(f);
+  }), [...new Set(c).intersection(new Set(t))];
+}
+class yh {
+  constructor(e, n, i, r, s, o = !0, h = !0, a = "dab", u = {
+    painterColor: "green",
+    erasingPainterColor: "red",
+    initialPainterRadius: 30,
+    initialRelocationThreshold: 600,
+    // in ms
+    initialRelocationDuration: 700,
+    // in ms
+    relocationInterval: 1e3,
+    // in ms
+    relocationUpdateDuration: 350,
+    // ms
+    showLens: !0,
+    lensStyle: {
+      color: "red",
+      strokeWidth: 3
+    },
+    // style for m-ball brushing and data-driven brushing
+    regionColor: "green"
+  }, c = 10, l = 20, f = 1, d = 0.1) {
+    this.preprocessed = e, this.canvasDom = n, this.canvasSize = i, this.canvasPixelSize = parseInt(this.canvasDom.style.width.slice(0, -2)), this.canvasPixelSize === NaN && (this.canvasPixelSize = this.canvasDom.style.width), this.scalingFactor = this.canvasSize / this.canvasPixelSize, this.statusUpdateCallback = r, this.pointRenderingStyle = s, this.technique = a, this.techniqueStyle = u, this.maxBrushNum = c, this.showGlobalDensity = o, this.showLocalCloseness = h, this.frameRate = l, this.timer = !0, this.relocationStartLd = void 0, this.maxOpacity = f, this.minOpacity = d, this.colorScale = An().domain(Kn(10)).range(Yo), this.ctx = n.getContext("2d"), this.painterRadius = this.techniqueStyle.initialPainterRadius, this.zeta = void 0, this.currentBrushIdx = 0, this.lensHull = void 0, this.prevLensHull = void 0, this.mode = "inspect", this.isInitialRelocationTriggered = !1, this.triggeredRelocation = null, this.isRelocating = !1, this.triggerRest = !1, this.isPainterRendering = !0, this.isErasing = !1, this.readyErasing = !1, this.startBrushingXPos = void 0, this.startBrushingYPos = void 0, this.brushingStatus = { 0: /* @__PURE__ */ new Set() }, this.modifiedBrushingStatus = { 0: /* @__PURE__ */ new Set() }, this.currentRegionBrushingStatus = /* @__PURE__ */ new Set(), this.parser(), this.initializeRenderingInfo(), this.clearRendering(), this.scatterplotRendering(), this.registerPainter(), this.canvasDom.style.cursor = "crosshair";
+  }
+  parser() {
+    const e = this.preprocessed.csr ?? this.preprocessed.similarity;
+    this.hdSim = qn(e), this.hd = this.preprocessed.hd, this.ld = [...this.preprocessed.ld], this.pointRenderingStyle.x_inverse && (this.ld = this.ld.map((n) => [-n[1], n[0]])), this.pointRenderingStyle.y_inverse && (this.ld = this.ld.map((n) => [n[0], -n[1]])), this.ld = Wo(this.ld, this.canvasSize, this.pointRenderingStyle), this.originalLd = [...this.ld], this.currLd = [...this.ld], this.prevLd = [...this.ld], this.nextLd = [...this.ld], this.knn = this.preprocessed.knn, this.labels = this.preprocessed.labels, this.density = this.hdSim.map((n) => n.reduce((i, r) => i + r, 0)), this.hdRadius = 0.5;
+  }
+  getCurrentBrushColor() {
+    return this.colorScale(this.currentBrushIdx);
+  }
+  initializeRenderingInfo() {
+    if (this.sizeArr = Array(this.hd.length).fill(this.pointRenderingStyle.size), this.colorArr = Array(this.hd.length).fill("black"), this.borderArr = Array(this.hd.length).fill(0), this.zIndexArr = Array(this.hd.length).fill(0), this.showGlobalDensity) {
+      const e = E().domain([0, V(this.density)]).range([this.minOpacity, this.maxOpacity]);
+      this.opacityArr = this.density.map((n) => e(n));
+    } else this.pointRenderingStyle.opacity ? this.opacityArr = Array(this.hd.length).fill(this.pointRenderingStyle.opacity) : this.opacityArr = Array(this.hd.length).fill(1);
+  }
+  constructInspectionRenderingInfoBasedOnRegion() {
+    Object.keys(this.brushingStatus).forEach((e) => {
+      this.brushingStatus[e].forEach((n) => {
+        this.colorArr[n] = this.getBrushingColor(e), this.zIndexArr[n] = 1;
+      });
+    });
+  }
+  constructInspectionRenderingInfoBasedOnPainter() {
+    this.seedPoints = [], Object.keys(this.brushingStatus).forEach((e) => {
+      this.brushingStatus[e].forEach((n) => {
+        this.colorArr[n] = this.getBrushingColor(e), this.zIndexArr[n] = 1;
+      });
+    }), this.initialSeedPoint = Ye(
+      this.currLd,
+      this.xPos,
+      this.yPos,
+      this.painterRadius,
+      this.density
+    ), this.initialSeedPoint !== -1 && (this.seedPoints = Jo(
+      this.currLd,
+      this.knn,
+      this.xPos,
+      this.yPos,
+      this.painterRadius,
+      this.density,
+      this.initialSeedPoint
+    ), this.seedPoints.push(this.initialSeedPoint), this.zeta = this.seedPoints.length, this.closenessArr = Pt(
+      this.seedPoints,
+      this.zeta,
+      this.hdSim,
+      this.knn
+    ), this.showLocalCloseness ? this.closenessArr.forEach((e, n) => {
+      this.opacityArr[n] = E().domain([0, 1]).range([this.minOpacity, this.maxOpacity])(e);
+    }) : this.showGlobalDensity ? this.opacityArr = this.density.map((e) => E().domain([0, V(this.density)]).range([this.minOpacity, this.maxOpacity])(e)) : this.opacityArr = Array(this.hd.length).fill(1), this.seedPoints.forEach((e) => {
+      this.sizeArr[e] = this.sizeArr[e] * 1, this.colorArr[e] = this.getCurrentBrushColor(), this.zIndexArr[e] = 2, this.opacityArr[e] = 1;
+    }));
+  }
+  constructBrushingRenderingInfoBasedOnRegion() {
+    Object.keys(this.brushingStatus).forEach((e) => {
+      this.brushingStatus[e].forEach((n) => {
+        e == this.currentBrushIdx && (this.borderArr[n] = !0, this.zIndexArr[n] = 1), this.colorArr[n] = this.getBrushingColor(e), this.zIndexArr[n] = 0.5;
+      }), this.currentRegionBrushingStatus.forEach((n) => {
+        this.borderArr[n] = !0, this.zIndexArr[n] = 1, this.colorArr[n] = this.getCurrentBrushColor(), this.zIndexArr[n] = 0.5;
+      }), this.currentRegionBrushingStatus.union(this.brushingStatus[e]).forEach((n) => {
+        this.sizeArr[n] = this.sizeArr[n] * 1;
+      }), e == this.currentBrushIdx && this.showLocalCloseness && (this.closenessArr = Pt(
+        Array.from(this.brushingStatus[e].union(this.currentRegionBrushingStatus)),
+        this.zeta,
+        this.hdSim,
+        this.knn
+      ), this.closenessArr.forEach((n, i) => {
+        this.opacityArr[i] = E().domain([0, 1]).range([this.minOpacity, this.maxOpacity])(n);
+      }));
+    });
+  }
+  constructBrushingRenderingInfoBasedOnPainter() {
+    Object.keys(this.brushingStatus).forEach((e) => {
+      this.technique == "dab" ? this.brushingStatus[e].forEach((n) => {
+        e == this.currentBrushIdx && (this.sizeArr[n] = this.sizeArr[n] * 1, this.borderArr[n] = !0, this.zIndexArr[n] = 1), this.colorArr[n] = this.getBrushingColor(e), this.zIndexArr[n] = 0.5;
+      }) : this.technique == "sb" && (this.brushingStatus[e].forEach((n) => {
+        e == this.currentBrushIdx && (this.sizeArr[n] = this.sizeArr[n] * 1, this.borderArr[n] = !0, this.zIndexArr[n] = 1), this.colorArr[n] = this.getBrushingColor(e), this.zIndexArr[n] = 0.5;
+      }), this.modifiedBrushingStatus[e].forEach((n) => {
+        e == this.currentBrushIdx && (this.sizeArr[n] = this.sizeArr[n] * 1, this.zIndexArr[n] = 1), this.colorArr[n] = this.getBrushingColor(e), this.zIndexArr[n] = 0.5;
+      })), e == this.currentBrushIdx && (this.technique == "sb" ? (this.zeta = this.brushingStatus[e].union(this.modifiedBrushingStatus[e]).size, this.closenessArr = Pt(
+        Array.from(
+          this.brushingStatus[e].union(this.modifiedBrushingStatus[e])
+        ),
+        this.zeta,
+        this.hdSim,
+        this.knn
+      )) : this.technique == "dab" && (this.zeta = this.brushingStatus[e].size, this.closenessArr = Pt(
+        Array.from(this.brushingStatus[e]),
+        this.zeta,
+        this.hdSim,
+        this.knn
+      )), this.showLocalCloseness ? this.closenessArr.forEach((n, i) => {
+        this.opacityArr[i] = E().domain([0, 1]).range([this.minOpacity, this.maxOpacity])(n);
+      }) : this.showGlobalDensity ? this.opacityArr = this.density.map((n) => E().domain([0, V(this.density)]).range([this.minOpacity, this.maxOpacity])(n)) : this.opacityArr = Array(this.hd.length).fill(1));
+    });
+  }
+  constructRenderingInfo() {
+    this.initializeRenderingInfo(), (this.technique == "ddb" || this.technique == "mbb") && (this.mode === "inspect" ? this.constructInspectionRenderingInfoBasedOnRegion() : (this.mode === "brush" || this.mode === "rest") && this.constructBrushingRenderingInfoBasedOnRegion()), this.technique == "sb" && (this.mode === "inspect" ? this.constructInspectionRenderingInfoBasedOnPainter() : this.mode === "brush" ? this.constructBrushingRenderingInfoBasedOnPainter() : this.mode === "rest" && this.constructBrushingRenderingInfoBasedOnPainter()), this.technique == "dab" && (this.mode === "inspect" ? this.constructInspectionRenderingInfoBasedOnPainter() : (this.mode === "brush" || this.mode === "rest" || this.mode === "reconstruct") && this.constructBrushingRenderingInfoBasedOnPainter());
+  }
+  scatterplotRendering() {
+    Xe(
+      this.pointRenderingStyle,
+      this.sizeArr,
+      this.colorArr,
+      this.opacityArr,
+      this.borderArr,
+      this.zIndexArr,
+      this.ctx,
+      this.hd,
+      this.currLd,
+      this.canvasSize,
+      this.mode === "inspect" || this.mode === "reconstruct"
+    );
+  }
+  rectRegionRendering(e, n, i, r) {
+    Go(
+      this.ctx,
+      e,
+      n,
+      i,
+      r,
+      this.techniqueStyle.regionColor
+    );
+  }
+  circleRegionRendering(e, n, i, r) {
+    Vo(
+      this.ctx,
+      e,
+      n,
+      i,
+      r,
+      this.techniqueStyle.regionColor
+    );
+  }
+  painterRendering(e, n, i) {
+    Uo(
+      this.ctx,
+      e,
+      n,
+      i,
+      this.readyErasing ? this.techniqueStyle.erasingPainterColor : this.techniqueStyle.painterColor
+    );
+  }
+  lensRendering(e, n, i, r, s) {
+    e === "circle" && lh(this.ctx, n, i, r, s, this.techniqueStyle.lensStyle);
+  }
+  clearRendering() {
+    de(this.ctx, this.canvasSize);
+  }
+  updater(e) {
+    (this.technique == "ddb" || this.technique == "mbb") && this.timer && (this.timer = !1, this.clearRendering(), this.constructRenderingInfo(), this.scatterplotRendering(), this.mode === "brush" && (this.technique == "ddb" && this.rectRegionRendering(this.startBrushingXPos, this.startBrushingYPos, this.xPos, this.yPos), this.technique == "mbb" && this.circleRegionRendering(this.startBrushingXPos, this.startBrushingYPos, this.xPos, this.yPos)), setTimeout(() => {
+      this.timer = !0;
+    }, this.frameRate)), (this.technique == "dab" || this.technique == "sb") && (this.isInitialRelocationTriggered = !1, this.timer && (this.timer = !1, this.clearRendering(), this.constructRenderingInfo(), this.scatterplotRendering(), this.isPainterRendering && this.painterRendering(this.painterRadius, this.xPos, this.yPos), setTimeout(() => {
+      this.timer = !0;
+    }, this.frameRate)));
+  }
+  registerInitialRelocation() {
+    Ye(
+      this.currLd,
+      this.xPos,
+      this.yPos,
+      this.painterRadius,
+      this.density
+    ) !== -1 && (this.triggeredRelocation && clearTimeout(this.triggeredRelocation), this.isInitialRelocationTriggered = !0, this.triggeredRelocation = setTimeout(() => {
+      if (!this.isInitialRelocationTriggered) return;
+      const n = rh(
+        [...this.seedPoints],
+        this.xPos,
+        this.yPos,
+        this.painterRadius,
+        this.currLd,
+        [...this.closenessArr]
+      );
+      this.isRelocating = !0, ht(
+        this.pointRenderingStyle.style,
+        this.sizeArr,
+        this.colorArr,
+        this.opacityArr,
+        this.borderArr,
+        this.zIndexArr,
+        this.ctx,
+        this.canvasSize,
+        this.hd,
+        this.currLd,
+        n,
+        this.techniqueStyle.initialRelocationDuration,
+        this.pointRenderingStyle,
+        () => {
+          this.prevLd = [...this.currLd], this.currLd = [...n], this.mode = "initiate", this.isRelocating = !1;
+        },
+        (i) => {
+          this.painterRendering(this.painterRadius, this.xPos, this.yPos), this.lensRendering("circle", this.painterRadius, this.xPos, this.yPos, i);
+        }
+      );
+    }, this.techniqueStyle.initialRelocationThreshold));
+  }
+  cancelInitialRelocation() {
+    this.isRelocating = !0, this.initializeRenderingInfo(), ht(
+      this.pointRenderingStyle.style,
+      this.sizeArr,
+      this.colorArr,
+      this.opacityArr,
+      this.borderArr,
+      this.zIndexArr,
+      this.ctx,
+      this.canvasSize,
+      this.hd,
+      this.currLd,
+      this.prevLd,
+      this.techniqueStyle.initialRelocationDuration,
+      this.pointRenderingStyle,
+      () => {
+        this.mode = "inspect", this.currLd = [...this.prevLd], this.isRelocating = !1;
+      },
+      () => {
+        this.painterRendering(this.painterRadius, this.xPos, this.yPos);
+      }
+    );
+  }
+  initiateRelocationDuringBrushing(e = !0) {
+    if (this.relocationStartLd = this.currLd.map((n) => [n[0], n[1]]), e) {
+      const n = hh(
+        this.brushingStatus[this.currentBrushIdx],
+        this.lensHull,
+        this.relocationStartLd,
+        this.closenessArr,
+        this.painterRadius,
+        this.canvasSize
+      );
+      this.nextLd = n.map((i) => [i[0], i[1]]), this.isRelocating = !0;
+    } else
+      this.nextLd = this.relocationStartLd.map((n) => [n[0], n[1]]), this.isRelocating = !1;
+  }
+  performRelocationDuringBrushing(e) {
+    this.isRelocating = !0;
+    const n = this.relocationStartLd ?? this.currLd, i = Math.max(0, Math.min(1, e)), r = i < 0.5 ? 4 * i * i * i : 1 - Math.pow(-2 * i + 2, 3) / 2, s = n.map((o, h) => {
+      const a = this.nextLd[h] ?? o, u = o[0] + (a[0] - o[0]) * r, c = o[1] + (a[1] - o[1]) * r;
+      return [u, c];
+    });
+    this.currLd = [...s];
+  }
+  completeRelocationDuringBrushing() {
+    this.nextLd !== void 0 && (this.currLd = this.nextLd.map((e) => [e[0], e[1]])), this.relocationStartLd = void 0, this.isRelocating = !1;
+  }
+  startRegionBrushing() {
+    this.mode = "brush", this.startBrushingXPos = this.xPos, this.startBrushingYPos = this.yPos;
+  }
+  startSbBrushing() {
+    this.mode = "brush", this.xPos, this.yPos;
+    const e = at(
+      this.currLd,
+      this.xPos,
+      this.yPos,
+      this.painterRadius
+    ), n = Bt(e, this.hdSim, this.hdRadius);
+    this.brushingStatus[this.currentBrushIdx] === void 0 ? (this.brushingStatus[this.currentBrushIdx] = new Set(e), this.modifiedBrushingStatus[this.currentBrushIdx] = /* @__PURE__ */ new Set([...this.brushingStatus[this.currentBrushIdx].union(n)])) : (e.forEach((i) => this.brushingStatus[this.currentBrushIdx].add(i)), e.forEach((i) => {
+      this.modifiedBrushingStatus[this.currentBrushIdx].add(i);
+    }), n.forEach((i) => this.modifiedBrushingStatus[this.currentBrushIdx].add(i))), this.beforeBrushPointNum = -1;
+  }
+  startDabBrushing(e = !1) {
+    this.mode = "brush";
+    const n = this.xPos, i = this.yPos, r = at(
+      this.currLd,
+      this.xPos,
+      this.yPos,
+      this.painterRadius
+    );
+    this.brushingStatus[this.currentBrushIdx] === void 0 ? this.brushingStatus[this.currentBrushIdx] = new Set(r) : r.forEach((s) => this.brushingStatus[this.currentBrushIdx].add(s)), this.beforeBrushPointNum = -1, Ko(
+      this.ctx,
+      this.canvasSize,
+      this.techniqueStyle.relocationInterval,
+      this.techniqueStyle.relocationUpdateDuration,
+      () => {
+        this.updateLensWhileBrushing(), this.afterBrushPointNum = [...this.brushingStatus[this.currentBrushIdx]].length, this.beforeBrushPointNum !== this.afterBrushPointNum ? this.initiateRelocationDuringBrushing(!0) : this.initiateRelocationDuringBrushing(!1), this.beforeBrushPointNum = this.afterBrushPointNum;
+      },
+      (s, o) => {
+        this.constructRenderingInfo(), o > 1 && this.triggerRest && (this.triggerRest = !1, [...this.brushingStatus[this.currentBrushIdx]].length > 0 ? this.mode = "rest" : this.mode = "inspect", this.updater()), s > 1 && (o < 1 ? this.performRelocationDuringBrushing(o) : this.isRelocating && this.completeRelocationDuringBrushing()), Xe(
+          this.pointRenderingStyle,
+          this.sizeArr,
+          this.colorArr,
+          this.opacityArr,
+          this.borderArr,
+          this.zIndexArr,
+          this.ctx,
+          this.hd,
+          this.currLd,
+          this.canvasSize,
+          this.mode === "inspect" || this.mode === "reconstruct"
+        ), s < 1 ? !e || this.lensHull == null ? this.lensRendering("circle", this.painterRadius, n, i, 1) : J(this.ctx, this.lensHull, s, this.techniqueStyle.lensStyle, this.painterRadius * 2) : s < 2 ? o < 1 ? (e ? J(this.ctx, this.prevLensHull, 1 - o, this.techniqueStyle.lensStyle, this.painterRadius * 2) : this.lensRendering("circle", this.painterRadius, n, i, 1 - o), J(this.ctx, this.lensHull, o, this.techniqueStyle.lensStyle, this.painterRadius * 2)) : (this.isRelocating = !1, J(this.ctx, this.lensHull, 1, this.techniqueStyle.lensStyle, this.painterRadius * 2)) : o < 1 ? (J(this.ctx, this.lensHull, o, this.techniqueStyle.lensStyle, this.painterRadius * 2), J(this.ctx, this.prevLensHull, 1 - o, this.techniqueStyle.lensStyle, this.painterRadius * 2)) : (this.isRelocating = !1, J(this.ctx, this.lensHull, 1, this.techniqueStyle.lensStyle, this.painterRadius * 2)), this.painterRendering(this.painterRadius, this.xPos, this.yPos);
+      },
+      () => this.mode !== "brush"
+    );
+  }
+  confirmRegionBrushing() {
+    this.startBrushingXPos = void 0, this.startBrushingYPos = void 0, this.brushingStatus[this.currentBrushIdx] = /* @__PURE__ */ new Set([
+      ...this.brushingStatus[this.currentBrushIdx],
+      ...this.currentRegionBrushingStatus
+    ]);
+  }
+  proceedRegionBrushing() {
+    if (this.technique == "ddb") {
+      const e = this.xPos, n = this.yPos, i = dh(
+        this.currLd,
+        this.startBrushingXPos,
+        this.startBrushingYPos,
+        e,
+        n
+      ), r = gh(
+        i,
+        this.hd
+      );
+      this.currentRegionBrushingStatus = new Set(r);
+    }
+    if (this.technique == "mbb") {
+      const e = this.xPos, n = this.yPos, i = mh(
+        this.currLd,
+        this.startBrushingXPos,
+        this.startBrushingYPos,
+        e,
+        n
+      );
+      if (i.length <= 1) {
+        this.currentRegionBrushingStatus = /* @__PURE__ */ new Set();
+        return;
+      }
+      const r = ph(
+        i,
+        this.hd,
+        this.ld,
+        this.startBrushingXPos,
+        this.startBrushingYPos
+      );
+      this.currentRegionBrushingStatus = new Set(r);
+    }
+  }
+  proceedBrushing() {
+    const e = at(
+      this.currLd,
+      this.xPos,
+      this.yPos,
+      this.painterRadius
+    );
+    if (e.forEach((n) => this.brushingStatus[this.currentBrushIdx].add(n)), this.technique === "sb") {
+      const n = Bt(e, this.hdSim, this.hdRadius);
+      e.forEach((i) => {
+        this.modifiedBrushingStatus[this.currentBrushIdx].add(i);
+      }), n.forEach((i) => this.modifiedBrushingStatus[this.currentBrushIdx].add(i));
+    }
+  }
+  eraseBruhsing() {
+    if (this.technique === "sb") {
+      at(
+        this.currLd,
+        this.xPos,
+        this.yPos,
+        this.painterRadius
+      ).forEach((i) => this.brushingStatus[this.currentBrushIdx].delete(i));
+      const n = Bt(
+        this.brushingStatus[this.currentBrushIdx],
+        this.hdSim,
+        this.hdRadius
+      );
+      this.modifiedBrushingStatus[this.currentBrushIdx] = /* @__PURE__ */ new Set([...this.brushingStatus[this.currentBrushIdx], ...n]);
+    }
+    this.technique === "dab" && at(
+      this.currLd,
+      this.xPos,
+      this.yPos,
+      this.painterRadius
+    ).forEach((n) => this.brushingStatus[this.currentBrushIdx].delete(n));
+  }
+  updateLensWhileBrushing() {
+    const e = Array.from(this.brushingStatus[this.currentBrushIdx]).map((i) => this.currLd[i]), n = fh(e);
+    this.prevLensHull === void 0 ? this.prevLensHull = n : this.prevLensHull = JSON.parse(JSON.stringify(this.lensHull)), this.lensHull = n;
+  }
+  mousemoveEventHandler(e) {
+    if (this.xPos = e.offsetX * this.scalingFactor, this.yPos = e.offsetY * this.scalingFactor, (this.technique == "ddb" || this.technique == "mbb") && (this.mode === "inspect" && (this.updater(e), this.statusUpdateCallback(this.getEntireBrushingStatus(), {
+      points: this.seedPoints ? this.seedPoints : [],
+      color: this.getBrushingColor(this.currentBrushIdx)
+    })), this.mode === "brush" && (this.proceedRegionBrushing(), this.statusUpdateCallback(this.getEntireBrushingStatus()), this.updater(e)), this.mode === "rest" && this.updater(e)), this.technique == "sb" && (this.mode !== "brush" && (e.shiftKey ? this.readyErasing = !0 : (this.readyErasing = !1, this.isErasing = !1)), this.mode === "inspect" && (this.updater(e), this.statusUpdateCallback(this.getEntireBrushingStatus(), {
+      points: this.seedPoints ? this.seedPoints : [],
+      color: this.getBrushingColor(this.currentBrushIdx)
+    })), this.mode === "brush" && (this.proceedBrushing(), this.statusUpdateCallback(this.getEntireBrushingStatus()), this.updater(e)), this.mode === "rest" && (this.isErasing ? (this.eraseBruhsing(), this.updater(e)) : this.updater(e))), this.technique == "dab") {
+      if (this.mode !== "brush" && (e.shiftKey ? this.readyErasing = !0 : (this.readyErasing = !1, this.isErasing = !1)), this.isRelocating)
+        return;
+      this.mode === "inspect" && (this.updater(e), this.registerInitialRelocation(), this.statusUpdateCallback(this.getEntireBrushingStatus(), {
+        points: this.seedPoints ? this.seedPoints : [],
+        color: this.getBrushingColor(this.currentBrushIdx)
+      })), this.mode === "initiate" && this.cancelInitialRelocation(), this.mode === "brush" && (this.proceedBrushing(), this.statusUpdateCallback(this.getEntireBrushingStatus()), this.updater(e)), this.mode === "rest" && (this.isErasing ? (this.eraseBruhsing(), this.updater(e)) : this.updater(e));
+    }
+  }
+  mousedownEventHandler(e) {
+    if (this.xPos = e.offsetX * this.scalingFactor, this.yPos = e.offsetY * this.scalingFactor, (this.technique == "ddb" || this.technique == "mbb") && (this.mode === "inspect" || this.mode == "rest") && (this.updater(e), this.startRegionBrushing(), this.statusUpdateCallback(this.getEntireBrushingStatus())), this.technique == "sb" && (this.mode === "inspect" || this.mode === "rest")) {
+      if (this.readyErasing) {
+        this.isErasing = !0;
+        return;
+      }
+      this.startSbBrushing(), this.statusUpdateCallback(this.getEntireBrushingStatus()), this.updater(e);
+    }
+    if (this.technique == "dab") {
+      if (this.isRelocating)
+        return;
+      if (this.mode === "initiate")
+        this.startDabBrushing(), this.statusUpdateCallback(this.getEntireBrushingStatus()), this.updater(e);
+      else if (this.mode === "rest") {
+        if (this.readyErasing) {
+          this.isErasing = !0;
+          return;
+        }
+        this.mode = "brush", this.startDabBrushing(!0), this.updater(e);
+      }
+    }
+  }
+  mouseupEventHandler(e) {
+    (this.technique === "ddb" || this.technique === "mbb") && this.mode === "brush" && (this.mode = "rest", this.confirmRegionBrushing()), this.technique === "sb" && this.mode === "brush" && (this.mode = "rest"), this.technique === "dab" && (this.mode === "brush" && (this.triggerRest = !0), this.mode === "rest" && (this.isErasing = !1));
+  }
+  mousewheelEventHandler(e) {
+    if (e.ctrlKey && this.technique === "sb") {
+      this.hdRadius += e.deltaY * 1e-4, this.hdRadius < 0 ? this.hdRadius = 0 : this.hdRadius > 1 && (this.hdRadius = 1);
+      let n = Bt(
+        this.brushingStatus[this.currentBrushIdx],
+        this.hdSim,
+        this.hdRadius
+      );
+      n = new Set(n), this.modifiedBrushingStatus[this.currentBrushIdx] = /* @__PURE__ */ new Set([...this.brushingStatus[this.currentBrushIdx].union(n)]), this.updater(e);
+      return;
+    }
+    this.painterRadius += e.deltaY * 0.017, this.painterRadius < 5 && (this.painterRadius = 5), this.updater(e);
+  }
+  keydownEventHandler(e) {
+    (this.technique === "ddb" || this.technique === "mbb") && e.key === "Escape" && (this.mode = "inspect", this.currentRegionBrushingStatus = /* @__PURE__ */ new Set(), this.updater(e));
+  }
+  registerPainter() {
+    this.canvasDom.tabIndex = 1, this.canvasDom.style.outline = "none", this.mousemoveHigherOrderFunction = () => (e) => {
+      this.mousemoveEventHandler(e);
+    }, this.mousedownHigherOrderFunction = () => (e) => {
+      this.mousedownEventHandler(e);
+    }, this.mouseupHigherOrderFunction = () => (e) => {
+      this.mouseupEventHandler(e);
+    }, this.mousewheelHigherOrderFunction = () => (e) => {
+      this.mousewheelEventHandler(e);
+    }, this.keydownHigherOrderFunction = () => (e) => {
+      this.keydownEventHandler(e);
+    }, this.mousemoveFunction = this.mousemoveHigherOrderFunction(), this.mousedownFunction = this.mousedownHigherOrderFunction(), this.mouseupFunction = this.mouseupHigherOrderFunction(), this.mousewheelFunction = this.mousewheelHigherOrderFunction(), this.keydownFunction = this.keydownHigherOrderFunction(), this.canvasDom.addEventListener("mousemove", this.mousemoveFunction), this.canvasDom.addEventListener("mousedown", this.mousedownFunction), this.canvasDom.addEventListener("mouseup", this.mouseupFunction), this.canvasDom.addEventListener("wheel", this.mousewheelFunction), this.canvasDom.addEventListener("keydown", this.keydownFunction);
+  }
+  unMount() {
+    this.canvasDom.removeEventListener("mousemove", this.mousemoveFunction), this.canvasDom.removeEventListener("mousedown", this.mousedownFunction), this.canvasDom.removeEventListener("mouseout", this.mouseoutFunction), this.canvasDom.removeEventListener("mouseup", this.mouseupFunction), this.canvasDom.removeEventListener("wheel", this.mousewheelFunction), this.canvasDom.removeEventListener("keydown", this.keydownFunction);
+  }
+  // functions related to the update of the brushing status
+  addNewBrush() {
+    const e = Math.max(...Object.keys(this.brushingStatus).map((n) => parseInt(n)));
+    e >= this.maxBrushNum || (this.currentBrushIdx = e + 1, this.brushingStatus[this.currentBrushIdx] = /* @__PURE__ */ new Set(), this.modifiedBrushingStatus[this.currentBrushIdx] = /* @__PURE__ */ new Set(), this.sizeArr = Array(this.hd.length).fill(this.pointRenderingStyle.size), this.reconstructInitialScatterplot());
+  }
+  changeBrush(e) {
+    this.currentBrushIdx = e;
+  }
+  removeBrush(e) {
+    delete this.brushingStatus[e];
+  }
+  getEntireBrushingStatus() {
+    const e = [];
+    return Object.keys(this.brushingStatus).forEach((n) => {
+      e.push({
+        idx: n,
+        points: [...this.brushingStatus[n]],
+        color: this.getBrushingColor(n),
+        isCurrent: n == this.currentBrushIdx
+      });
+    }), e;
+  }
+  getBrushingStatus() {
+    return this.brushingStatus;
+  }
+  getCurrentBrushIdx() {
+    return this.currentBrushIdx;
+  }
+  getBrushingColor(e) {
+    return this.colorScale(e);
+  }
+  reconstructInitialScatterplot() {
+    this.mode = "inspect", this.technique === "dab" && (this.constructRenderingInfo(), this.isRelocating = !0, this.borderArr = Array(this.hd.length).fill(!1), this.opacityArr = this.density.map((e) => E().domain([0, V(this.density)]).range([this.minOpacity, this.maxOpacity])(e)), ht(
+      this.pointRenderingStyle.style,
+      this.sizeArr,
+      this.colorArr,
+      this.opacityArr,
+      this.borderArr,
+      this.zIndexArr,
+      this.ctx,
+      this.canvasSize,
+      this.hd,
+      this.mode === "reconstruct" ? this.originalLd : this.currLd,
+      this.originalLd,
+      this.techniqueStyle.initialRelocationDuration,
+      this.pointRenderingStyle,
+      () => {
+        this.isRelocating = !1, this.prevLd = [...this.originalLd], this.currLd = [...this.originalLd], this.nextLd = [...this.originalLd], this.mode = "inspect";
+      },
+      (e) => {
+        this.painterRendering(this.painterRadius, this.xPos, this.yPos);
+      }
+    ));
+  }
+  temporalReconstructInitialScatterplot() {
+    this.isRelocating = !0, this.opacityArr = this.density.map((e) => E().domain([0, V(this.density)]).range([this.minOpacity, this.maxOpacity])(e)), ht(
+      this.pointRenderingStyle.style,
+      this.sizeArr,
+      this.colorArr,
+      this.opacityArr,
+      this.borderArr,
+      this.zIndexArr,
+      this.ctx,
+      this.canvasSize,
+      this.hd,
+      this.currLd,
+      this.originalLd,
+      this.techniqueStyle.initialRelocationDuration,
+      this.pointRenderingStyle,
+      () => {
+        this.mode = "reconstruct";
+      },
+      (e) => {
+      }
+    );
+  }
+  cancelTemporalReconstruction() {
+    this.constructRenderingInfo(), ht(
+      this.pointRenderingStyle.style,
+      this.sizeArr,
+      this.colorArr,
+      this.opacityArr,
+      this.borderArr,
+      this.zIndexArr,
+      this.ctx,
+      this.canvasSize,
+      this.hd,
+      this.originalLd,
+      this.currLd,
+      this.techniqueStyle.initialRelocationDuration,
+      this.pointRenderingStyle,
+      () => {
+        this.isRelocating = !1, this.prevLd = [...this.currLd], this.mode = "rest";
+      },
+      (e) => {
+      }
+    );
+  }
+}
+function Vt(t) {
+  return t.map((e) => ({
+    id: Number(e.idx),
+    points: e.points,
+    color: e.color,
+    isCurrent: e.isCurrent
+  }));
+}
+function wh(t) {
+  var e;
+  return ((e = t.pointGlyph) == null ? void 0 : e.type) === "image" ? {
+    style: "monochrome",
+    size: t.pointSize ?? 18,
+    inversed: t.pointGlyph.inverted ?? !0,
+    pixelWidth: t.pointGlyph.pixelWidth,
+    pixelHeight: t.pointGlyph.pixelHeight,
+    removeBackground: t.pointGlyph.removeBackground ?? !0
+  } : {
+    style: "dot",
+    size: t.pointSize ?? 5
+  };
+}
+function xh(t, e, n = {}) {
+  let i = e, r = [], s;
+  const o = n.width ?? t.width, h = n.technique ?? "dab", a = wh(n), u = () => {
+    var l;
+    s = new yh(
+      i,
+      t,
+      o,
+      (f) => {
+        var d;
+        r = Vt(f), (d = n.onBrushChange) == null || d.call(n, r);
+      },
+      a,
+      n.showGlobalDensity ?? !0,
+      n.showLocalCloseness ?? !0,
+      h,
+      void 0,
+      n.maxBrushes ?? 10
+    ), r = Vt(s.getEntireBrushingStatus()), (l = n.onBrushChange) == null || l.call(n, r);
+  };
+  return u(), {
+    get engine() {
+      return {
+        getBrushes: () => r,
+        getFrame: () => ({
+          mode: "inspect",
+          technique: h,
+          width: o,
+          height: o,
+          points: [],
+          brushes: r,
+          seedPoints: []
+        })
+      };
+    },
+    render: () => {
+    },
+    addBrush: () => {
+      var l;
+      s == null || s.addNewBrush(), s && (r = Vt(s.getEntireBrushingStatus()), (l = n.onBrushChange) == null || l.call(n, r));
+    },
+    showOriginal: () => {
+      s == null || s.temporalReconstructInitialScatterplot();
+    },
+    restoreBrushing: () => {
+      s == null || s.cancelTemporalReconstruction();
+    },
+    destroy: () => {
+      s == null || s.unMount(), s = void 0;
+    },
+    setDataset: (l) => {
+      s == null || s.unMount(), i = l, u();
+    }
+  };
+}
+function vh(t, e, n, i, r, s, o, h) {
+  const a = s.pixelWidth, u = s.pixelHeight, c = Math.max(...e, 1), l = r / a, f = r / u;
+  t.save();
+  for (let d = 0; d < u; d += 1)
+    for (let g = 0; g < a; g += 1) {
+      let y = (e[g + d * a] ?? 0) / c * 255;
+      s.inverted && (y = 255 - y);
+      const w = (255 - y) / 255 * h;
+      s.removeBackground && w <= (s.backgroundThreshold ?? 0.03) || (t.globalAlpha = w, t.fillStyle = o, t.fillRect(n - r / 2 + g * l, i - r / 2 + d * f, Math.ceil(l), Math.ceil(f)));
+    }
+  t.restore();
+}
+function _h(t, e, n, i = {}) {
+  const r = i.pointGlyph ?? { type: "dot" };
+  if (t.clearRect(0, 0, e.width, e.height), i.background && (t.fillStyle = i.background, t.fillRect(0, 0, e.width, e.height)), e.points.slice().sort((s, o) => Number(s.brushed) - Number(o.brushed)).forEach((s) => {
+    r.type === "image" ? vh(t, n.hd[s.index], s.x, s.y, s.size, r, s.color, s.opacity) : (t.beginPath(), t.arc(s.x, s.y, s.size, 0, Math.PI * 2), t.fillStyle = s.color, t.globalAlpha = s.opacity, t.fill(), t.globalAlpha = 1, t.closePath()), s.border && (t.beginPath(), t.arc(s.x, s.y, Math.max(s.size + 2, 5), 0, Math.PI * 2), t.strokeStyle = "#111827", t.lineWidth = 1.5, t.stroke(), t.closePath());
+  }), e.lens && (t.beginPath(), t.arc(e.lens.x, e.lens.y, e.lens.radius, 0, Math.PI * 2), t.strokeStyle = `rgba(220, 38, 38, ${e.lens.opacity})`, t.lineWidth = 3, t.stroke(), t.closePath()), e.region) {
+    if (t.save(), t.fillStyle = "rgba(22, 163, 74, 0.18)", e.region.type === "rect")
+      t.fillRect(e.region.x0, e.region.y0, e.region.x1 - e.region.x0, e.region.y1 - e.region.y0);
+    else {
+      const s = Math.hypot(e.region.x1 - e.region.x0, e.region.y1 - e.region.y0);
+      t.beginPath(), t.arc(e.region.x0, e.region.y0, s, 0, Math.PI * 2), t.fill(), t.closePath();
+    }
+    t.restore();
+  }
+  e.painter && (t.beginPath(), t.arc(e.painter.x, e.painter.y, e.painter.radius, 0, Math.PI * 2), t.fillStyle = e.painter.erasing ? "rgba(220, 38, 38, 0.16)" : "rgba(22, 163, 74, 0.16)", t.fill(), t.closePath());
+}
+function Ve(t, e) {
+  const n = t.getBoundingClientRect(), i = t.width / n.width, r = t.height / n.height;
+  return {
+    x: (e.clientX - n.left) * i,
+    y: (e.clientY - n.top) * r,
+    shiftKey: e.shiftKey
+  };
+}
+function bh(t, e, n = {}) {
+  if (n.implementation === "original")
+    return xh(t, e, n);
+  const i = t.getContext("2d");
+  if (!i)
+    throw new Error("Could not create a 2D canvas context.");
+  let r = e, s = pe(r, {
+    ...n,
+    width: n.width ?? t.width,
+    height: n.height ?? t.height
+  });
+  const o = () => {
+    var m;
+    const g = s.tick();
+    _h(i, g, r, n), (m = n.onFrame) == null || m.call(n, g);
+  }, h = () => {
+    var g;
+    (g = n.onBrushChange) == null || g.call(n, s.getBrushes());
+  }, a = (g) => {
+    s.pointerMove(Ve(t, g)), h();
+  }, u = (g) => {
+    var m;
+    (m = t.setPointerCapture) == null || m.call(t, g.pointerId), s.pointerDown(Ve(t, g)), h();
+  }, c = (g) => {
+    var m;
+    (m = t.releasePointerCapture) == null || m.call(t, g.pointerId), s.pointerUp(), h();
+  }, l = (g) => {
+    g.preventDefault(), s.wheel(g.deltaY), h();
+  };
+  t.addEventListener("pointermove", a), t.addEventListener("pointerdown", u), t.addEventListener("pointerup", c), t.addEventListener("wheel", l, { passive: !1 });
+  let f;
+  const d = () => {
+    o(), typeof requestAnimationFrame < "u" && (f = requestAnimationFrame(d));
+  };
+  return d(), {
+    get engine() {
+      return s;
+    },
+    render: o,
+    addBrush: () => {
+      s.addBrush(), h();
+    },
+    destroy: () => {
+      f !== void 0 && typeof cancelAnimationFrame < "u" && cancelAnimationFrame(f), t.removeEventListener("pointermove", a), t.removeEventListener("pointerdown", u), t.removeEventListener("pointerup", c), t.removeEventListener("wheel", l);
+    },
+    setDataset: (g) => {
+      r = g, s = pe(r, {
+        ...n,
+        width: n.width ?? t.width,
+        height: n.height ?? t.height
+      }), h();
+    }
+  };
+}
+export {
+  bh as createBrushingCanvas,
+  _h as renderFrame
+};

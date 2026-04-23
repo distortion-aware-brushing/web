@@ -4,12 +4,14 @@ Integrated Canvas and React web library for Distortion-aware brushing.
 
 This is the package most users should import. It wires a preprocessed DAB dataset to pointer/wheel events, animation, Canvas rendering, dot glyphs, image glyphs, and brush status callbacks.
 
-## Install
+## Install From GitHub
 
 ```bash
-yarn add @dabrush/web @dabrush/preprocess-js @dabrush/schema
+yarn add github:distortion-aware-brushing/web#main \
+  github:distortion-aware-brushing/preprocess-js#main
 # or
-npm install @dabrush/web @dabrush/preprocess-js @dabrush/schema
+npm install github:distortion-aware-brushing/web#main \
+  github:distortion-aware-brushing/preprocess-js#main
 ```
 
 React users also need React 18 or later.
@@ -17,6 +19,8 @@ React users also need React 18 or later.
 ```bash
 yarn add react react-dom
 ```
+
+These packages are not published to npm yet. GitHub installation runs each package `prepare` script and builds `dist/` locally during install.
 
 ## Data Flow
 

@@ -2,13 +2,15 @@
 # yarn lockfile v1
 
 
-"@dabrush/engine@file:../dab-engine":
+"@dabrush/engine@github:distortion-aware-brushing/engine#main":
   version "0.1.0"
+  resolved "https://codeload.github.com/distortion-aware-brushing/engine/tar.gz/388243dcd239a477deca9016f6b8cba8f362db27"
   dependencies:
-    "@dabrush/schema" "file:../../../../Library/Caches/Yarn/v6/npm-@dabrush-engine-0.1.0-8a9894d9-f772-4bdc-8c91-e3bd935a9ed3-1776842560670/node_modules/@dabrush/dab-schema"
+    "@dabrush/schema" "github:distortion-aware-brushing/schema#main"
 
-"@dabrush/schema@file:../dab-schema":
+"@dabrush/schema@github:distortion-aware-brushing/schema#main":
   version "0.1.0"
+  resolved "https://codeload.github.com/distortion-aware-brushing/schema/tar.gz/b83bdbd304f066fb03a288ac50d7b9f3c6f868c1"
 
 "@esbuild/aix-ppc64@0.25.12":
   version "0.25.12"

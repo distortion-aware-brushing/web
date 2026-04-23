@@ -25,11 +25,12 @@
   "scripts": {
     "build": "vite build && tsc -p tsconfig.build.json",
     "test": "vitest run",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepare": "npm run build"
   },
   "dependencies": {
-    "@dabrush/engine": "file:../dab-engine",
-    "@dabrush/schema": "file:../dab-schema",
+    "@dabrush/engine": "github:distortion-aware-brushing/engine#main",
+    "@dabrush/schema": "github:distortion-aware-brushing/schema#main",
     "d3": "^7.9.0"
   },
   "peerDependencies": {
