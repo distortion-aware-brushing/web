@@ -34,6 +34,7 @@ export type BrushingCanvasController = {
   destroy: () => void;
   setDataset: (dataset: DabDataset) => void;
   addBrush: () => void;
+  removeBrush: (id: number) => void;
   showOriginal?: () => void;
   restoreBrushing?: () => void;
 };
@@ -227,6 +228,10 @@ export function createBrushingCanvas(
     render,
     addBrush: () => {
       engine.addBrush();
+      emit();
+    },
+    removeBrush: (id: number) => {
+      engine.removeBrush(id);
       emit();
     },
     destroy: () => {

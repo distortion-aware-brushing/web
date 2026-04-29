@@ -18,6 +18,7 @@ export default class MultiDBrushing {
   );
   unMount(): void;
   addNewBrush(): void;
+  removeBrush(brushIdx: number): void;
   temporalReconstructInitialScatterplot(): void;
   cancelTemporalReconstruction(): void;
   getEntireBrushingStatus(): Array<{ idx: string; points: number[]; color: string; isCurrent: boolean }>;

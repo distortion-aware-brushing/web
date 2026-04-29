@@ -90,6 +90,13 @@ export function createOriginalBrushingCanvas(
         options.onBrushChange?.(latestBrushes);
       }
     },
+    removeBrush: (id: number) => {
+      instance?.removeBrush(id);
+      if (instance) {
+        latestBrushes = normalizeStatus(instance.getEntireBrushingStatus());
+        options.onBrushChange?.(latestBrushes);
+      }
+    },
     showOriginal: () => {
       instance?.temporalReconstructInitialScatterplot();
     },

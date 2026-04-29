@@ -23,6 +23,7 @@ export type BrushingCanvasController = {
     destroy: () => void;
     setDataset: (dataset: DabDataset) => void;
     addBrush: () => void;
+    removeBrush: (id: number) => void;
     showOriginal?: () => void;
     restoreBrushing?: () => void;
 };

@@ -1021,7 +1021,14 @@ class MultiDBrushing {
 	}
 
 	removeBrush(brushIdx) {
+		const brushKeys = Object.keys(this.brushingStatus);
+		if (brushKeys.length <= 1) return;
 		delete this.brushingStatus[brushIdx];
+		delete this.modifiedBrushingStatus[brushIdx];
+		if (this.currentBrushIdx == brushIdx) {
+			this.currentBrushIdx = parseInt(Object.keys(this.brushingStatus)[0]);
+		}
+		this.reconstructInitialScatterplot();
 	}
 
 	getEntireBrushingStatus() {
